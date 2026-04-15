@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { User, Wallet } = require('../models');
 const { getRedis } = require('../config/redis');
 const logger = require('../config/logger');
+const { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/email');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -109,6 +110,83 @@ class AuthService {
     }
     const tokens = await this._generateTokens(user, deviceInfo);
     return { user, tokens };
+  }
+
+  static async register({ name, email, phone, password, role = 'player' }) {
+    // Only allow player or owner self-registration (never admin via API)
+    const safeRole = role === 'owner' ? 'owner' : 'player';
+
+    // Check if user already exists
+    const existing = await User.findOne({ $or: [{ email }, ...(phone ? [{ phone }] : [])] });
+    if (existing) {
+      throw Object.assign(new Error('An account with this email or phone already exists'), { statusCode: 409 });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      phone: phone || undefined,
+      password,
+      role: safeRole,
+      isVerified: true,
+    });
+
+    await Wallet.create({ user: user._id });
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(email, name).catch(err =>
+      logger.error({ err: err.message }, 'Welcome email failed')
+    );
+
+    return { user, message: 'Account created successfully' };
+  }
+
+  static async forgotPassword(email) {
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if user exists — return success anyway
+      return { message: 'If an account exists with this email, you will receive a reset code' };
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const redis = getRedis();
+    await redis.set(`pwd_reset:${email}`, otp, 'EX', 600); // 10 min expiry
+
+    await sendPasswordResetEmail(email, otp);
+
+    return { message: 'If an account exists with this email, you will receive a reset code' };
+  }
+
+  static async verifyResetOtp(email, otp) {
+    const redis = getRedis();
+    const storedOtp = await redis.get(`pwd_reset:${email}`);
+    if (!storedOtp || storedOtp !== otp) {
+      throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
+    }
+    // Mark OTP as verified — create a reset token
+    const resetToken = uuidv4();
+    await redis.set(`pwd_reset_verified:${email}`, resetToken, 'EX', 600);
+    await redis.del(`pwd_reset:${email}`);
+    return { resetToken, message: 'OTP verified' };
+  }
+
+  static async resetPassword(email, resetToken, newPassword) {
+    const redis = getRedis();
+    const storedToken = await redis.get(`pwd_reset_verified:${email}`);
+    if (!storedToken || storedToken !== resetToken) {
+      throw Object.assign(new Error('Invalid or expired reset token'), { statusCode: 400 });
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    await redis.del(`pwd_reset_verified:${email}`);
+    return { message: 'Password reset successfully' };
   }
 
   static async refreshToken(refreshToken) {

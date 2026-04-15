@@ -122,3 +122,100 @@ exports.getAuditLogs = async (req, res, next) => {
     next(new AppError(err.message, 500));
   }
 };
+
+/* ─── Ban / Unban ─── */
+exports.banUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return next(new AppError('User not found', 404));
+    user.isBanned = true;
+    user.isActive = false;
+    user.banReason = req.body.reason || 'Banned by admin';
+    await user.save();
+    await AuditLog.create({ actor: req.user._id, action: 'user_ban', resource: { type: 'User', id: user._id }, details: { reason: user.banReason } });
+    res.json({ success: true, data: { user } });
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};
+
+exports.unbanUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return next(new AppError('User not found', 404));
+    user.isBanned = false;
+    user.isActive = true;
+    user.banReason = undefined;
+    await user.save();
+    await AuditLog.create({ actor: req.user._id, action: 'user_unban', resource: { type: 'User', id: user._id } });
+    res.json({ success: true, data: { user } });
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};
+
+/* ─── Analytics ─── */
+exports.getAnalyticsOverview = async (req, res, next) => {
+  try {
+    const [totalUsers, totalVenues, totalBookings, totalRevenue] = await Promise.all([
+      User.countDocuments(),
+      Venue.countDocuments({ isApproved: true }),
+      Booking.countDocuments({ status: 'confirmed' }),
+      Booking.aggregate([{ $match: { paymentStatus: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
+    ]);
+    const oneMonthAgo = new Date(); oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: oneMonthAgo } });
+    res.json({ success: true, data: {
+      totalUsers, totalVenues, totalBookings,
+      totalRevenue: totalRevenue[0]?.total || 0,
+      userGrowth: `+${newUsersThisMonth}`,
+    }});
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};
+
+exports.getUserGrowth = async (req, res, next) => {
+  try {
+    const days = req.query.range === '7d' ? 7 : req.query.range === '90d' ? 90 : 30;
+    const startDate = new Date(); startDate.setDate(startDate.getDate() - days);
+    const data = await User.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, users: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+      { $project: { date: '$_id', users: 1, _id: 0 } },
+    ]);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};
+
+exports.getRevenueChart = async (req, res, next) => {
+  try {
+    const days = req.query.range === '7d' ? 7 : req.query.range === '90d' ? 90 : 30;
+    const startDate = new Date(); startDate.setDate(startDate.getDate() - days);
+    const data = await Booking.aggregate([
+      { $match: { paymentStatus: 'paid', createdAt: { $gte: startDate } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$totalAmount' } } },
+      { $sort: { _id: 1 } },
+      { $project: { date: '$_id', revenue: 1, _id: 0 } },
+    ]);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};
+
+exports.getSportDistribution = async (req, res, next) => {
+  try {
+    const data = await Booking.aggregate([
+      { $group: { _id: '$sport', count: { $sum: 1 } } },
+      { $project: { sport: '$_id', count: 1, _id: 0 } },
+      { $sort: { count: -1 } },
+    ]);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(new AppError(err.message, 500));
+  }
+};

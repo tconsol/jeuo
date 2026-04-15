@@ -35,7 +35,11 @@ export default function TournamentDetail() {
         <span className="text-3xl">{sportIcon(tournament.sport)}</span>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{tournament.name}</h1>
-          <p className="text-sm text-gray-500">{formatDate(tournament.startDate)} — {formatDate(tournament.endDate)}</p>
+          <p className="text-sm text-gray-500">
+            {tournament.startDate ? formatDate(tournament.startDate) : 'TBD'}
+            {' — '}
+            {tournament.endDate ? formatDate(tournament.endDate) : 'TBD'}
+          </p>
         </div>
         <Badge variant="primary" className="ml-auto">{tournament.status}</Badge>
       </div>

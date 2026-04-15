@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 
@@ -131,6 +131,11 @@ export default function Login() {
                 <p>owner2@athleon.in — Password@123</p>
               </div>
             )}
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-primary-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <button
               type="submit"
               disabled={loading}
@@ -188,6 +193,13 @@ export default function Login() {
             </form>
           )
         )}
+
+        <p className="text-center text-sm text-gray-500 mt-5">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-primary-600 font-medium hover:underline">
+            Register as Owner
+          </Link>
+        </p>
       </div>
     </div>
   );

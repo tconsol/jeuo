@@ -7,9 +7,13 @@ const { sendOtpSchema, verifyOtpSchema, googleAuthSchema } = require('../validat
 router.post('/send-otp', validate(sendOtpSchema), ctrl.sendOtp);
 router.post('/verify-otp', validate(verifyOtpSchema), ctrl.verifyOtp);
 router.post('/login', ctrl.emailLogin);
+router.post('/register', ctrl.register);
 router.post('/google', validate(googleAuthSchema), ctrl.googleAuth);
 router.post('/refresh', ctrl.refreshToken);
 router.post('/logout', authenticate, ctrl.logout);
+router.post('/forgot-password', ctrl.forgotPassword);
+router.post('/verify-reset-otp', ctrl.verifyResetOtp);
+router.post('/reset-password', ctrl.resetPassword);
 router.get('/me', authenticate, ctrl.me);
 
 module.exports = router;

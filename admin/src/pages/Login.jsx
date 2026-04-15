@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 
@@ -127,6 +127,11 @@ export default function Login() {
                 <p>admin@athleon.in — Password@123</p>
               </div>
             )}
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-primary-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <button
               type="submit"
               disabled={loading}

@@ -79,14 +79,19 @@ class VenueService {
 
     const bookedSet = new Set(bookedSlots.map(b => `${b.court}-${b.slotIndex}`));
 
-    const courts = venue.courts.map(court => ({
-      ...court,
-      slots: court.slots.map((slot, idx) => ({
-        ...slot,
-        index: idx,
-        isAvailable: !bookedSet.has(`${court._id}-${idx}`),
-      })),
-    }));
+    // Venue model has a flat slots[] array + courtCount (no nested courts)
+    const courtCount = venue.courtCount || 1;
+    const courts = Array.from({ length: courtCount }, (_, i) => {
+      const courtNumber = i + 1;
+      return {
+        courtNumber,
+        slots: (venue.slots || []).map((slot, idx) => ({
+          ...slot,
+          index: idx,
+          isAvailable: slot.isAvailable !== false && !bookedSet.has(`${courtNumber}-${idx}`),
+        })),
+      };
+    });
 
     return courts;
   }

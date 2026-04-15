@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { FiSearch, FiBell, FiUser, FiLogOut, FiCalendar } from 'react-icons/fi';
+import { FiSearch, FiBell, FiUser, FiLogOut, FiCalendar, FiGrid, FiCreditCard, FiClock } from 'react-icons/fi';
 import { useState } from 'react';
 
 export default function Navbar() {
@@ -81,8 +81,17 @@ export default function Navbar() {
                           <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <FiUser size={16} className="text-gray-400" /> Profile
                           </Link>
+                          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <FiGrid size={16} className="text-gray-400" /> Dashboard
+                          </Link>
                           <Link to="/bookings" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <FiCalendar size={16} className="text-gray-400" /> My Bookings
+                          </Link>
+                          <Link to="/wallet" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <FiCreditCard size={16} className="text-gray-400" /> Wallet
+                          </Link>
+                          <Link to="/matches/history" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <FiClock size={16} className="text-gray-400" /> Match History
                           </Link>
                         </div>
                         <div className="border-t border-gray-100 pt-1">

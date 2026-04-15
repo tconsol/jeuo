@@ -26,8 +26,8 @@ export const sendOtp = createAsyncThunk('auth/sendOtp', async (phone, { rejectWi
 export const verifyOtp = createAsyncThunk('auth/verifyOtp', async ({ phone, otp }, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/verify-otp', { phone, otp });
-    localStorage.setItem('accessToken', data.data.accessToken);
-    localStorage.setItem('refreshToken', data.data.refreshToken);
+    localStorage.setItem('accessToken', data.data.tokens.accessToken);
+    localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
     return data.data.user;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Invalid OTP');
@@ -41,6 +41,28 @@ export const logout = createAsyncThunk('auth/logout', async () => {
   } catch { /* ignore */ }
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
+});
+
+export const loginWithEmail = createAsyncThunk('auth/loginWithEmail', async ({ email, password }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/auth/login', { email, password });
+    localStorage.setItem('accessToken', data.data.tokens.accessToken);
+    localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
+    return data.data.user;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.error || 'Invalid email or password');
+  }
+});
+
+export const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async (idToken, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/auth/google', { idToken });
+    localStorage.setItem('accessToken', data.data.tokens.accessToken);
+    localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
+    return data.data.user;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.error || 'Google authentication failed');
+  }
 });
 
 const authSlice = createSlice({
@@ -85,6 +107,26 @@ const authSlice = createSlice({
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.isAuthenticated = false;
+      })
+      .addCase(loginWithEmail.pending, (state) => { state.isLoading = true; state.error = null; })
+      .addCase(loginWithEmail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload;
+      })
+      .addCase(loginWithEmail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(loginWithGoogle.pending, (state) => { state.isLoading = true; state.error = null; })
+      .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload;
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

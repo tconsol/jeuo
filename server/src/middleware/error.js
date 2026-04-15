@@ -1,5 +1,14 @@
 const logger = require('../config/logger');
 
+class AppError extends Error {
+  constructor(message, statusCode = 500) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
 const notFound = (req, res) => {
   res.status(404).json({ error: `Route ${req.originalUrl} not found` });
 };
@@ -40,4 +49,4 @@ const errorHandler = (err, req, res, _next) => {
   });
 };
 
-module.exports = { notFound, errorHandler };
+module.exports = { AppError, notFound, errorHandler };
