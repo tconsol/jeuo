@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+*.log
+coverage/
+.DS_Store
+Thumbs.db
+uploads/
+gcs-key.json
+*.pem
