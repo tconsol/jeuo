@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FiMapPin, FiUsers, FiTv, FiAward, FiArrowRight, FiChevronRight, FiStar, FiCalendar, FiCheck } from 'react-icons/fi';
 import api from '../lib/api';
+import { getVenueImageUrl } from '../utils';
 
 const features = [
   { icon: FiMapPin, title: 'Book Venues', desc: 'Find and book sports venues near you instantly', to: '/venues', gradient: 'from-primary-500 to-primary-600', bg: 'bg-primary-50' },
@@ -71,7 +72,7 @@ export default function Home() {
               </span>
             </h1>
             <p className="mt-6 text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-              Book venues, find players, score matches live, and compete in tournaments — all in one beautifully crafted platform.
+              Book venues, find players, score matches live, and compete in tournaments   all in one beautifully crafted platform.
             </p>
             <div className="mt-10 flex flex-wrap gap-3 justify-center">
               <Link to="/venues" className="btn-primary text-base px-8 py-3.5 flex items-center gap-2 shadow-lg shadow-primary-500/25">
@@ -144,16 +145,12 @@ export default function Home() {
                   <Link to={`/venues/${venue._id}`}
                     className="block bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border border-gray-100 transition-all duration-300 group">
                     <div className="h-36 bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center overflow-hidden">
-                      {venue.images?.[0] ? (
-                        <img src={venue.images[0]} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <FiMapPin size={32} className="text-primary-300" />
-                      )}
+                      <img src={getVenueImageUrl(venue)} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{venue.name}</h3>
                       <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <FiMapPin size={12} /> {venue.address?.area || venue.address?.city}
+                        <FiMapPin size={12} /> {venue.location?.city || venue.location?.address || 'Location'}
                       </p>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex gap-1.5">
@@ -182,7 +179,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-display font-bold text-gray-900">Everything You Need</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">One platform for all your sports activities — from booking to competing.</p>
+            <p className="text-gray-500 mt-3 max-w-lg mx-auto">One platform for all your sports activities   from booking to competing.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {features.map((f, i) => (

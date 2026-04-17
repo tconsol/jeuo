@@ -1,6 +1,25 @@
 const router = require('express').Router();
-const { auth } = require('../middleware/auth');
+const { auth, authenticate } = require('../middleware/auth');
 const Match = require('../models/Match');
+
+// GET /api/v1/matches/my - matches where logged-in user is a scorer or player
+router.get('/my', authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const matches = await Match.find({
+      status: { $in: ['scheduled', 'live', 'paused'] },
+      $or: [
+        { scorers: userId },
+        { 'teams.home.players': userId },
+        { 'teams.away.players': userId },
+      ],
+    })
+      .sort({ scheduledAt: 1 })
+      .populate('venue', 'name location')
+      .lean();
+    res.json({ success: true, data: { matches } });
+  } catch (err) { next(err); }
+});
 
 // GET /api/v1/matches/live - all live matches
 router.get('/live', async (req, res, next) => {
@@ -27,7 +46,8 @@ router.get('/', async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .populate('teams.players.user', 'name')
+      .populate('teams.home.players', 'name')
+      .populate('teams.away.players', 'name')
       .lean();
 
     const total = await Match.countDocuments(filter);
@@ -39,7 +59,8 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const match = await Match.findById(req.params.id)
-      .populate('teams.players.user', 'name phone')
+      .populate('teams.home.players', 'name phone')
+      .populate('teams.away.players', 'name phone')
       .populate('venue', 'name address')
       .populate('activity', 'title')
       .lean();

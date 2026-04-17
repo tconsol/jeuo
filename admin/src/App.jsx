@@ -7,6 +7,7 @@ import Users from './pages/Users';
 import VenueApprovals from './pages/VenueApprovals';
 import AuditLogs from './pages/AuditLogs';
 import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard';
+import { DisputeManagement } from './pages/disputes';
 
 function RequireAdmin({ children }) {
   const token = localStorage.getItem('admin_token');
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="venues" element={<VenueApprovals />} />
         <Route path="audit-logs" element={<AuditLogs />} />
         <Route path="analytics" element={<AnalyticsDashboard />} />
+        <Route path="disputes" element={<DisputeManagement />} />
       </Route>
     </Routes>
   );

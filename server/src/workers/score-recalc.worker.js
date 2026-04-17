@@ -10,7 +10,7 @@ let scoreRecalcWorker = null;
 function createScoreRecalcWorker() {
   const redis = getRedis();
 
-  // Score recalculation worker — replays all events to rebuild score
+  // Score recalculation worker   replays all events to rebuild score
   scoreRecalcWorker = new Worker(
     'score-recalculation',
     async (job) => {

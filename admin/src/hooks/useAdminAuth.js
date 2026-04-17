@@ -7,18 +7,18 @@ export function useAdminAuth() {
 
   const login = useCallback(async (credentials) => {
     const { data } = await api.post('/auth/login', credentials);
-    localStorage.setItem('token', data.data.accessToken);
-    localStorage.setItem('refreshToken', data.data.refreshToken);
+    localStorage.setItem('admin_token', data.data?.tokens?.accessToken || data.data.accessToken);
+    localStorage.setItem('admin_refreshToken', data.data?.tokens?.refreshToken || data.data.refreshToken);
     return data.data;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refreshToken');
     navigate('/login');
   }, [navigate]);
 
-  const isAuthenticated = useCallback(() => !!localStorage.getItem('token'), []);
+  const isAuthenticated = useCallback(() => !!localStorage.getItem('admin_token'), []);
 
   return { login, logout, isAuthenticated };
 }

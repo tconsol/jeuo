@@ -18,6 +18,8 @@ const tournamentRoutes = require('./routes/tournament.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const adminRoutes = require('./routes/admin.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const teamRoutes = require('./routes/team.routes');
+const disputeRoutes = require('./routes/dispute.routes');
 const { errorHandler, notFound } = require('./middleware/error');
 
 const app = express();
@@ -48,7 +50,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
-// Logging — log every API request
+// Logging   log every API request
 if (process.env.NODE_ENV !== 'test') {
   app.use((req, res, next) => {
     const start = Date.now();
@@ -83,6 +85,8 @@ app.use('/api/v1/tournaments', tournamentRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/teams', teamRoutes);
+app.use('/api/v1/disputes', disputeRoutes);
 
 // Error handling
 app.use(notFound);

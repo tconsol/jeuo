@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
  * SCORING EVENT MODEL
  *
  * Every scoring action is stored as an immutable event.
- * The match score is DERIVED by replaying events — never stored directly.
+ * The match score is DERIVED by replaying events   never stored directly.
  * This ensures full audit trail, undo capability, and idempotency.
  *
  * Idempotency: Each event has a unique `idempotencyKey` (clientId + timestamp)
@@ -40,8 +40,8 @@ const eventSchema = new mongoose.Schema({
    */
   type: { type: String, required: true },
 
-  // Which team this event applies to
-  team: { type: String, enum: ['home', 'away'], required: true },
+  // Which team this event applies to (optional for some sports like cricket/tennis)
+  team: { type: String, enum: ['home', 'away'] },
 
   // Player involved (if applicable)
   player: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

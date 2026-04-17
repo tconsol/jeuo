@@ -93,7 +93,7 @@ class TennisScoring {
     if (game.points[0] >= 3 && game.points[1] >= 3) {
       if (game.advantage === null) {
         if (game.points[0] === game.points[1] || (game.points[0] >= 3 && game.points[1] >= 3)) {
-          // Deuce state — set advantage
+          // Deuce state   set advantage
           game.advantage = pointWinner;
           game.isDeuce = true;
           return state;

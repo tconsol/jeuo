@@ -9,3 +9,5 @@ export { walletService } from './wallet.service';
 export { notificationService } from './notification.service';
 export { tournamentService } from './tournament.service';
 export { userService } from './user.service';
+export { teamService } from './team.service';
+export { disputeService } from './dispute.service';

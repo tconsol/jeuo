@@ -76,7 +76,7 @@ export default function LiveMatches() {
             return (
               <Link
                 key={match._id}
-                to={`/matches/${match._id}`}
+                to={`/scoring/${match._id}`}
                 className="block bg-white rounded-2xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-200 p-4"
               >
                 <div className="flex items-start justify-between mb-3">

@@ -2,7 +2,7 @@
   "name": "athleon",
   "version": "1.0.0",
   "private": true,
-  "description": "Athléon — Sports Ecosystem Platform",
+  "description": "Athléon   Sports Ecosystem Platform",
   "workspaces": [
     "server",
     "client",

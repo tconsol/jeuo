@@ -2,12 +2,27 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 
+const ACTION_STYLES = {
+  create: 'bg-emerald-50 text-emerald-600',
+  approve: 'bg-emerald-50 text-emerald-600',
+  delete: 'bg-red-50 text-red-600',
+  reject: 'bg-red-50 text-red-600',
+  ban: 'bg-red-50 text-red-600',
+  update: 'bg-blue-50 text-blue-600',
+  unban: 'bg-amber-50 text-amber-600',
+};
+
+function actionStyle(action) {
+  const key = Object.keys(ACTION_STYLES).find((k) => action?.includes(k));
+  return ACTION_STYLES[key] || 'bg-gray-50 text-gray-500';
+}
+
 export default function AuditLogs() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-audit-logs', page],
-    queryFn: () => api.get('/admin/audit-logs', { params: { page, limit: 30 } }).then((r) => r.data),
+    queryFn: () => api.get('/admin/audit-logs', { params: { page, limit: 30 } }).then((r) => r.data.data),
   });
 
   const logs = data?.logs || [];
@@ -17,46 +32,45 @@ export default function AuditLogs() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-        <p className="text-sm text-gray-500">{total} entries</p>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{total} entries</p>
+        </div>
       </div>
 
-      <div className="card overflow-hidden !p-0">
+      <div className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 text-xs uppercase border-b border-gray-200 bg-gray-50">
-              <th className="py-3 px-4">Action</th>
-              <th className="py-3 px-4">User</th>
-              <th className="py-3 px-4">Resource</th>
-              <th className="py-3 px-4">Details</th>
-              <th className="py-3 px-4">Time</th>
+            <tr className="text-left text-gray-400 text-[11px] uppercase tracking-wider border-b border-gray-100">
+              <th className="py-3.5 px-5 font-medium">Action</th>
+              <th className="py-3.5 px-5 font-medium">User</th>
+              <th className="py-3.5 px-5 font-medium">Resource</th>
+              <th className="py-3.5 px-5 font-medium">Details</th>
+              <th className="py-3.5 px-5 font-medium">Time</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-50">
             {isLoading ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={5} className="text-center py-12 text-gray-400">
+                <div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> Loading…</div>
+              </td></tr>
             ) : logs.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">No audit logs</td></tr>
+              <tr><td colSpan={5} className="text-center py-12 text-gray-400">No audit logs</td></tr>
             ) : logs.map((log) => (
-              <tr key={log._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                <td className="py-3 px-4">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                    log.action?.includes('create') ? 'bg-green-100 text-green-700' :
-                    log.action?.includes('delete') ? 'bg-red-100 text-red-700' :
-                    log.action?.includes('update') ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>{log.action}</span>
+              <tr key={log._id} className="hover:bg-gray-50/50 transition">
+                <td className="py-3.5 px-5">
+                  <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg ${actionStyle(log.action)}`}>{log.action}</span>
                 </td>
-                <td className="py-3 px-4 text-gray-600">{log.user?.name || log.userId || '—'}</td>
-                <td className="py-3 px-4 text-gray-500">
-                  <span className="capitalize">{log.resourceType}</span>
-                  {log.resourceId && <span className="text-xs text-gray-400 ml-1">({log.resourceId.slice(-6)})</span>}
+                <td className="py-3.5 px-5 text-gray-600">{log.actor?.name || ' '}</td>
+                <td className="py-3.5 px-5 text-gray-500">
+                  <span className="capitalize">{log.resource?.type || ' '}</span>
+                  {log.resource?.id && <span className="text-xs text-gray-400 ml-1">({String(log.resource.id).slice(-6)})</span>}
                 </td>
-                <td className="py-3 px-4 text-xs text-gray-400 max-w-xs truncate">
-                  {log.details ? JSON.stringify(log.details).slice(0, 80) : '—'}
+                <td className="py-3.5 px-5 text-xs text-gray-400 max-w-xs truncate">
+                  {log.details ? JSON.stringify(log.details).slice(0, 80) : ' '}
                 </td>
-                <td className="py-3 px-4 text-xs text-gray-400">
-                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}
+                <td className="py-3.5 px-5 text-xs text-gray-400 whitespace-nowrap">
+                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : ' '}
                 </td>
               </tr>
             ))}
@@ -65,12 +79,12 @@ export default function AuditLogs() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center items-center gap-3">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-            className="btn-ghost text-sm disabled:opacity-30">← Prev</button>
-          <span className="px-3 py-2 text-sm text-gray-400">{page} / {totalPages}</span>
+            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition">← Prev</button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
           <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="btn-ghost text-sm disabled:opacity-30">Next →</button>
+            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition">Next →</button>
         </div>
       )}
     </div>

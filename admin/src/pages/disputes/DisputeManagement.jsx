@@ -19,7 +19,7 @@ export default function DisputeManagement() {
 
   const columns = [
     { key: 'type', label: 'Type', render: (v) => <span className="capitalize">{v}</span> },
-    { key: 'user', label: 'Reported By', render: (_, row) => row.user?.name || '—' },
+    { key: 'user', label: 'Reported By', render: (_, row) => row.user?.name || ' ' },
     { key: 'description', label: 'Issue', render: (v) => <span className="line-clamp-1">{v}</span> },
     { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v} /> },
     { key: 'createdAt', label: 'Date', render: (v) => new Date(v).toLocaleDateString('en-IN') },

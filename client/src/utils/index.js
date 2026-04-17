@@ -3,16 +3,25 @@ export function formatCurrency(amount) {
 }
 
 export function formatDate(date) {
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'N/A';
+  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 }
 
 export function formatTime(date) {
-  return new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(date));
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'N/A';
+  return new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).format(d);
 }
 
 export function formatRelativeTime(date) {
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'N/A';
   const now = Date.now();
-  const diff = now - new Date(date).getTime();
+  const diff = now - d.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
@@ -54,4 +63,22 @@ export function sportIcon(sport) {
 export function capitalize(str) {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function getVenueImageUrl(venue, index = 0) {
+  // Use venue images from backend if available
+  if (venue.images && venue.images.length > index && venue.images[index]) {
+    return venue.images[index];
+  }
+  // Return first image if index doesn't exist
+  if (venue.images && venue.images.length > 0) {
+    return venue.images[0];
+  }
+  // Fallback placeholder
+  return 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22400%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22600%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2224%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3ENo Image Available%3C/text%3E%3C/svg%3E';
+}
+
+export function getUnsplashImageUrl(query, width = 600, height = 400) {
+  const sanitized = query.replace(/\s+/g, ',').toLowerCase();
+  return `https://source.unsplash.com/${width}x${height}/?${sanitized}`;
 }

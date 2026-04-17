@@ -5,14 +5,53 @@ const { AppError } = require('../middleware/error');
 /* ─── Dashboard Stats ─── */
 exports.getDashboard = async (req, res, next) => {
   try {
-    const [users, venues, bookings, matches, tournaments] = await Promise.all([
+    const [totalUsers, totalVenues, totalBookings, activeMatches, pendingVenues, revenueAgg] = await Promise.all([
       User.countDocuments(),
       Venue.countDocuments(),
       Booking.countDocuments(),
-      Match.countDocuments(),
-      Tournament.countDocuments(),
+      Match.countDocuments({ status: 'live' }),
+      Venue.countDocuments({ isApproved: false }),
+      Booking.aggregate([{ $match: { paymentStatus: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
     ]);
-    res.json({ success: true, data: { users, venues, bookings, matches, tournaments } });
+    const totalRevenue = revenueAgg[0]?.total || 0;
+
+    // Sport distribution
+    const sportDistribution = await Venue.aggregate([
+      { $unwind: '$sports' },
+      { $group: { _id: '$sports', count: { $sum: 1 } } },
+      { $project: { sport: '$_id', count: 1, _id: 0 } },
+      { $sort: { count: -1 } },
+    ]);
+
+    // User signups last 7 days
+    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const signupChart = await User.aggregate([
+      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+      { $project: { date: '$_id', count: 1, _id: 0 } },
+    ]);
+
+    // Recent activity (last 10 audit logs)
+    const recentActivity = await AuditLog.find()
+      .populate('actor', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+    const formattedActivity = recentActivity.map(a => ({
+      description: `${a.actor?.name || 'System'}   ${a.action}`,
+      createdAt: a.createdAt,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        stats: { totalUsers, totalVenues, activeMatches, totalBookings, pendingVenues, totalRevenue },
+        sportDistribution,
+        signupChart,
+        recentActivity: formattedActivity,
+      },
+    });
   } catch (err) {
     next(new AppError(err.message, 500));
   }
@@ -26,6 +65,14 @@ exports.getUsers = async (req, res, next) => {
     const filter = {};
     if (req.query.role) filter.role = req.query.role;
     if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
+    if (req.query.search) {
+      const s = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { name: { $regex: s, $options: 'i' } },
+        { email: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+      ];
+    }
 
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([

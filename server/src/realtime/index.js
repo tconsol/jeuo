@@ -34,7 +34,7 @@ function initRealtime(httpServer) {
 
   io.adapter(createAdapter(pubClient, subClient));
 
-  // JWT auth middleware — allow unauthenticated for public rooms
+  // JWT auth middleware   allow unauthenticated for public rooms
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
     if (!token) {

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 
+const FILTERS = ['all', 'confirmed', 'locked', 'cancelled'];
+
 export default function Bookings() {
   const [filter, setFilter] = useState('all');
 
@@ -14,53 +16,63 @@ export default function Bookings() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{bookings.length} bookings</p>
+      </div>
 
       <div className="flex gap-2">
-        {['all', 'confirmed', 'locked', 'cancelled'].map((f) => (
+        {FILTERS.map((f) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm capitalize transition ${
-              filter === f ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition ${
+              filter === f ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
             }`}>{f}</button>
         ))}
       </div>
 
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="card animate-pulse h-20" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="bg-white rounded-2xl border border-gray-200/60 animate-pulse h-20" />)}
         </div>
       ) : (
-        <div className="card overflow-hidden !p-0">
+        <div className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 text-xs uppercase border-b border-gray-200 bg-gray-50">
-                <th className="py-3 px-4">Venue / Court</th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Time</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status</th>
+              <tr className="text-left text-gray-400 text-[11px] uppercase tracking-wider border-b border-gray-100">
+                <th className="py-3.5 px-5 font-medium">Venue / Court</th>
+                <th className="py-3.5 px-5 font-medium">Customer</th>
+                <th className="py-3.5 px-5 font-medium">Date</th>
+                <th className="py-3.5 px-5 font-medium">Time</th>
+                <th className="py-3.5 px-5 font-medium">Amount</th>
+                <th className="py-3.5 px-5 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {bookings.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No bookings found</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No bookings found</td></tr>
               ) : bookings.map((b) => (
-                <tr key={b._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                  <td className="py-3 px-4">
-                    <p className="text-gray-900">{b.venue?.name}</p>
+                <tr key={b._id} className="hover:bg-gray-50/50 transition">
+                  <td className="py-3.5 px-5">
+                    <p className="font-medium text-gray-900">{b.venue?.name}</p>
                     <p className="text-xs text-gray-400">{b.court?.name}</p>
                   </td>
-                  <td className="py-3 px-4 text-gray-600">{b.user?.name || '—'}</td>
-                  <td className="py-3 px-4 text-gray-600">{new Date(b.date).toLocaleDateString()}</td>
-                  <td className="py-3 px-4 text-gray-500">{b.slot?.startTime} – {b.slot?.endTime}</td>
-                  <td className="py-3 px-4 font-mono text-gray-900">{b.amount ? `₹${b.amount}` : '—'}</td>
-                  <td className="py-3 px-4">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                      b.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>{b.status}</span>
+                  <td className="py-3.5 px-5 text-gray-600">{b.user?.name || ' '}</td>
+                  <td className="py-3.5 px-5 text-gray-500 text-xs">{new Date(b.date).toLocaleDateString()}</td>
+                  <td className="py-3.5 px-5 text-gray-400 text-xs">{b.slot?.startTime} – {b.slot?.endTime}</td>
+                  <td className="py-3.5 px-5 font-medium text-gray-900">{b.amount ? `₹${b.amount.toLocaleString('en-IN')}` : ' '}</td>
+                  <td className="py-3.5 px-5">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                      b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                      b.status === 'cancelled' ? 'bg-red-50 text-red-600' :
+                      'bg-amber-50 text-amber-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        b.status === 'confirmed' ? 'bg-emerald-500' :
+                        b.status === 'cancelled' ? 'bg-red-500' :
+                        'bg-amber-500'
+                      }`} />
+                      {b.status}
+                    </span>
                   </td>
                 </tr>
               ))}

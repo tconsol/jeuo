@@ -22,9 +22,9 @@ export default function VenueApprovalManagement() {
 
   const columns = [
     { key: 'name', label: 'Venue Name' },
-    { key: 'owner', label: 'Owner', render: (_, row) => row.owner?.name || '—' },
-    { key: 'city', label: 'City', render: (_, row) => row.address?.city || '—' },
-    { key: 'sports', label: 'Sports', render: (v) => v?.join(', ') || '—' },
+    { key: 'owner', label: 'Owner', render: (_, row) => row.owner?.name || ' ' },
+    { key: 'city', label: 'City', render: (_, row) => row.address?.city || ' ' },
+    { key: 'sports', label: 'Sports', render: (v) => v?.join(', ') || ' ' },
     { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v} /> },
     { key: 'actions', label: '', render: (_, row) => (
       <div className="flex gap-2">

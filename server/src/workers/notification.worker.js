@@ -7,14 +7,14 @@ let notificationWorker = null;
 function createNotificationWorker() {
   const redis = getRedis();
 
-  // Notification worker — sends push notifications via FCM
+  // Notification worker   sends push notifications via FCM
   notificationWorker = new Worker(
     'notification',
     async (job) => {
       const { userId, type, message, data } = job.data;
       logger.info({ userId, type }, 'Processing notification job');
 
-      // FCM push notification (placeholder — replace with actual FCM SDK)
+      // FCM push notification (placeholder   replace with actual FCM SDK)
       // const admin = require('firebase-admin');
       // const user = await User.findById(userId).select('devices');
       // const tokens = user?.devices?.map(d => d.fcmToken).filter(Boolean);

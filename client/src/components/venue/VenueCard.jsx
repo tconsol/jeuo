@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, getVenueImageUrl } from '../../utils';
 
 export default function VenueCard({ venue }) {
-  const image = venue.images?.[0] || '/placeholder.svg';
+  const image = getVenueImageUrl(venue);
 
   return (
     <Link to={`/venues/${venue._id}`} className="block bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
@@ -17,7 +17,7 @@ export default function VenueCard({ venue }) {
             <span className="flex items-center gap-1 text-sm text-yellow-600 font-medium">⭐ {venue.rating.toFixed(1)}</span>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{venue.address?.area}, {venue.address?.city}</p>
+        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{venue.location?.city || venue.location?.address || 'Location'}</p>
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {venue.sports?.slice(0, 3).map((s) => <Badge key={s} variant="primary">{s}</Badge>)}
         </div>

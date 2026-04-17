@@ -61,7 +61,7 @@ export default function VolleyballScoreboard({ score }) {
             <div className={`text-center text-sm font-medium py-2 rounded-xl ${
               isMatchPoint ? 'bg-red-50 text-red-600 ring-1 ring-red-100' : 'bg-amber-50 text-amber-600 ring-1 ring-amber-100'
             }`}>
-              {isMatchPoint ? 'Match Point' : 'Set Point'} — Team {lead + 1}
+              {isMatchPoint ? 'Match Point' : 'Set Point'}   Team {lead + 1}
             </div>
           );
         }
@@ -72,7 +72,7 @@ export default function VolleyballScoreboard({ score }) {
       <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
         <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Match Stats</h3>
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="font-semibold text-gray-900">Team 1</div><div className="text-gray-400">—</div><div className="font-semibold text-gray-900">Team 2</div>
+          <div className="font-semibold text-gray-900">Team 1</div><div className="text-gray-400"> </div><div className="font-semibold text-gray-900">Team 2</div>
           {[
             ['Points Won', score.pointsWon?.[0] || 0, score.pointsWon?.[1] || 0],
             ['Aces', score.aces?.[0] || 0, score.aces?.[1] || 0],

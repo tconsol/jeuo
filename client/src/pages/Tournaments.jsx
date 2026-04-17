@@ -185,7 +185,7 @@ export default function Tournaments() {
                         </div>
                       ) : (
                         <div className="text-center">
-                          <p className="text-lg font-bold text-gray-300">—</p>
+                          <p className="text-lg font-bold text-gray-300"> </p>
                           <p className="text-xs text-gray-400">Prize</p>
                         </div>
                       )}

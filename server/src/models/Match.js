@@ -60,7 +60,19 @@ const matchSchema = new mongoose.Schema({
   toss: {
     wonBy: { type: String, enum: ['home', 'away'] },
     decision: String, // bat, bowl, serve, kick-off side
+    coinResult: { type: String, enum: ['heads', 'tails'] },
+    callingTeam: { type: String, enum: ['home', 'away'] },
+    callerChoice: { type: String, enum: ['heads', 'tails'] },
   },
+
+  // Live commentary (auto-generated, last 200 entries)
+  commentary: [{
+    over: String,
+    text: String,
+    type: { type: String, enum: ['normal', 'boundary', 'six', 'wicket', 'extra', 'milestone', 'info'], default: 'normal' },
+    timestamp: { type: Date, default: Date.now },
+    eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+  }],
 
   // Computed score snapshot (derived from events for quick reads)
   scoreSnapshot: { type: mongoose.Schema.Types.Mixed, default: {} },
@@ -82,7 +94,19 @@ const matchSchema = new mongoose.Schema({
     summary: String, // "Team A won by 5 wickets"
     margin: String,
     playerOfMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    confirmed: { type: Boolean, default: false },
+    confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
+
+  // Substitutions tracking
+  substitutions: [{
+    team: { type: String, enum: ['home', 'away'] },
+    playerOut: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    playerIn: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reason: { type: String, enum: ['tactical', 'injury', 'other'], default: 'tactical' },
+    minute: Number,
+    timestamp: { type: Date, default: Date.now },
+  }],
 
   startedAt: Date,
   completedAt: Date,

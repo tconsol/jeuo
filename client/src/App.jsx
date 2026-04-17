@@ -22,8 +22,14 @@ import LiveScoring from './pages/LiveScoring';
 import LiveMatches from './pages/LiveMatches';
 import MatchDetail from './pages/MatchDetail';
 import MatchHistory from './pages/match/MatchHistory';
+import MyMatches from './pages/match/MyMatches';
 import Tournaments from './pages/Tournaments';
 import TournamentDetail from './pages/tournament/TournamentDetail';
+import Teams from './pages/team/Teams';
+import TeamDetail from './pages/team/TeamDetail';
+import Plans from './pages/subscription/Plans';
+import Onboarding from './pages/onboarding/Onboarding';
+import Disputes from './pages/dispute/Disputes';
 import Profile from './pages/Profile';
 import EditProfile from './pages/profile/EditProfile';
 import UserDashboard from './pages/dashboard/UserDashboard';
@@ -68,12 +74,21 @@ export default function App() {
         <Route path="/matches/history" element={
           <ProtectedRoute><MatchHistory /></ProtectedRoute>
         } />
+        <Route path="/matches/my" element={
+          <ProtectedRoute><MyMatches /></ProtectedRoute>
+        } />
         <Route path="/matches/:id" element={<MatchDetail />} />
         <Route path="/scoring/:matchId" element={
           <ProtectedRoute><LiveScoring /></ProtectedRoute>
         } />
         <Route path="/tournaments" element={<Tournaments />} />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
+        <Route path="/teams" element={
+          <ProtectedRoute><Teams /></ProtectedRoute>
+        } />
+        <Route path="/teams/:id" element={
+          <ProtectedRoute><TeamDetail /></ProtectedRoute>
+        } />
         <Route path="/profile/:id?" element={<Profile />} />
         <Route path="/profile/edit" element={
           <ProtectedRoute><EditProfile /></ProtectedRoute>
@@ -89,6 +104,15 @@ export default function App() {
         } />
         <Route path="/notifications" element={
           <ProtectedRoute><Notifications /></ProtectedRoute>
+        } />
+        <Route path="/subscription" element={
+          <ProtectedRoute><Plans /></ProtectedRoute>
+        } />
+        <Route path="/onboarding" element={
+          <ProtectedRoute><Onboarding /></ProtectedRoute>
+        } />
+        <Route path="/disputes" element={
+          <ProtectedRoute><Disputes /></ProtectedRoute>
         } />
       </Route>
 

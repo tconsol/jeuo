@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useQuery } from '@tanstack/react-query';
 import { logout } from '../../store/slices/authSlice';
-import { FiSearch, FiBell, FiUser, FiLogOut, FiCalendar, FiGrid, FiCreditCard, FiClock } from 'react-icons/fi';
+import { FiSearch, FiBell, FiUser, FiLogOut, FiCalendar, FiGrid, FiCreditCard, FiClock, FiPlay } from 'react-icons/fi';
 import { useState } from 'react';
+import api from '../../lib/api';
 
 export default function Navbar() {
   const { isAuthenticated, user } = useSelector((s) => s.auth);
@@ -10,10 +12,20 @@ export default function Navbar() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const { data: notifData } = useQuery({
+    queryKey: ['notifications-count'],
+    queryFn: () => api.get('/notifications/unread-count').then((r) => r.data),
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
+  const unreadCount = notifData?.data?.count ?? notifData?.count ?? 0;
+
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/venues', label: 'Venues' },
     { to: '/activities', label: 'Play' },
+    { to: '/matches/live', label: 'Live' },
+    { to: '/matches/my', label: 'My Matches', authOnly: true },
     { to: '/tournaments', label: 'Tournaments' },
   ];
 
@@ -33,7 +45,7 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -58,7 +70,11 @@ export default function Navbar() {
               <>
                 <Link to="/notifications" className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200 relative">
                   <FiBell size={19} />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-white px-1">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
                 <div className="relative">
                   <button
@@ -89,6 +105,9 @@ export default function Navbar() {
                           </Link>
                           <Link to="/wallet" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <FiCreditCard size={16} className="text-gray-400" /> Wallet
+                          </Link>
+                          <Link to="/matches/my" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <FiPlay size={16} className="text-gray-400" /> My Matches
                           </Link>
                           <Link to="/matches/history" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <FiClock size={16} className="text-gray-400" /> Match History

@@ -90,9 +90,22 @@ class UserService {
   }
 
   static async getStats(userId) {
-    const user = await User.findById(userId).select('stats reliabilityScore').lean();
+    const user = await User.findById(userId).select('gamesPlayed gamesNoShow reliabilityScore rating totalRatings').lean();
     if (!user) throw new Error('User not found');
-    return { stats: user.stats, reliabilityScore: user.reliabilityScore };
+    const Match = require('../models').Match;
+    const [matchesPlayed, wins, tournamentsPlayed] = await Promise.all([
+      Match.countDocuments({ $or: [{ 'teams.home.players': userId }, { 'teams.away.players': userId }], status: 'completed' }),
+      Match.countDocuments({ $or: [
+        { 'teams.home.players': userId, 'result.winner': 'home' },
+        { 'teams.away.players': userId, 'result.winner': 'away' },
+      ], status: 'completed' }),
+      Match.countDocuments({ $or: [{ 'teams.home.players': userId }, { 'teams.away.players': userId }], tournament: { $ne: null }, status: 'completed' }),
+    ]);
+    return {
+      stats: { matchesPlayed, wins, tournaments: tournamentsPlayed },
+      reliabilityScore: user.reliabilityScore,
+      rating: user.rating,
+    };
   }
 }
 

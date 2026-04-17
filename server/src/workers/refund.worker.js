@@ -8,7 +8,7 @@ let refundWorker = null;
 function createRefundWorker() {
   const redis = getRedis();
 
-  // Refund worker — processes refunds with exponential backoff
+  // Refund worker   processes refunds with exponential backoff
   refundWorker = new Worker(
     'refund',
     async (job) => {

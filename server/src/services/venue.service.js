@@ -15,7 +15,7 @@ class VenueService {
 
   static async search({ sport, lat, lng, radius = 10000, minPrice, maxPrice, page = 1, limit = 20 }) {
     const filter = { isActive: true, isApproved: true };
-    if (sport) filter.sport = sport;
+    if (sport) filter.sports = sport;
     if (minPrice || maxPrice) {
       filter['priceRange.min'] = {};
       if (minPrice) filter['priceRange.min'].$gte = minPrice;
@@ -74,22 +74,55 @@ class VenueService {
     const bookedSlots = await Booking.find({
       venue: venueId,
       date: { $gte: dayStart, $lte: dayEnd },
-      status: { $in: ['confirmed', 'pending'] },
-    }).select('court slotIndex').lean();
+      status: { $in: ['confirmed', 'locked', 'completed'] },
+    }).select('court slot status lockedUntil').lean();
 
-    const bookedSet = new Set(bookedSlots.map(b => `${b.court}-${b.slotIndex}`));
+    // Build a map: "court-startTime" -> status
+    const slotStatusMap = new Map();
+    for (const b of bookedSlots) {
+      const key = `${b.court}-${b.slot?.startTime}`;
+      if (b.status === 'locked' && b.lockedUntil && new Date(b.lockedUntil) < new Date()) {
+        continue; // expired lock, treat as available
+      }
+      slotStatusMap.set(key, b.status); // confirmed, locked, or completed
+    }
 
-    // Venue model has a flat slots[] array + courtCount (no nested courts)
+    // Also support legacy index-based lookups
+    const bookedByIndex = new Set(bookedSlots.map(b => `${b.court}-${b.slotIndex}`));
+
     const courtCount = venue.courtCount || 1;
     const courts = Array.from({ length: courtCount }, (_, i) => {
       const courtNumber = i + 1;
       return {
         courtNumber,
-        slots: (venue.slots || []).map((slot, idx) => ({
-          ...slot,
-          index: idx,
-          isAvailable: slot.isAvailable !== false && !bookedSet.has(`${courtNumber}-${idx}`),
-        })),
+        name: `Court ${courtNumber}`,
+        slots: (venue.slots || []).map((slot, idx) => {
+          const keyByTime = `${courtNumber}-${slot.startTime}`;
+          const keyByIdx = `${courtNumber}-${idx}`;
+          const bookingStatus = slotStatusMap.get(keyByTime);
+          const isBookedByIndex = bookedByIndex.has(keyByIdx);
+
+          let status = 'available';
+          if (bookingStatus === 'confirmed' || bookingStatus === 'completed') {
+            status = 'booked';
+          } else if (bookingStatus === 'locked') {
+            status = 'locked';
+          } else if (isBookedByIndex) {
+            status = 'booked';
+          }
+
+          // Also check if slot is disabled by venue
+          if (slot.isAvailable === false) {
+            status = 'unavailable';
+          }
+
+          return {
+            ...slot,
+            index: idx,
+            status,
+            isAvailable: status === 'available',
+          };
+        }),
       };
     });
 

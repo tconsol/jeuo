@@ -109,6 +109,7 @@ class AuthService {
       throw Object.assign(new Error('Account is suspended'), { statusCode: 403 });
     }
     const tokens = await this._generateTokens(user, deviceInfo);
+    user.password = undefined;
     return { user, tokens };
   }
 
@@ -144,7 +145,7 @@ class AuthService {
   static async forgotPassword(email) {
     const user = await User.findOne({ email });
     if (!user) {
-      // Don't reveal if user exists — return success anyway
+      // Don't reveal if user exists   return success anyway
       return { message: 'If an account exists with this email, you will receive a reset code' };
     }
 
@@ -163,7 +164,7 @@ class AuthService {
     if (!storedOtp || storedOtp !== otp) {
       throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
     }
-    // Mark OTP as verified — create a reset token
+    // Mark OTP as verified   create a reset token
     const resetToken = uuidv4();
     await redis.set(`pwd_reset_verified:${email}`, resetToken, 'EX', 600);
     await redis.del(`pwd_reset:${email}`);
@@ -213,15 +214,20 @@ class AuthService {
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  static async logout(userId, deviceId) {
+  static async logout(userId, refreshToken) {
     const user = await User.findById(userId).select('+devices');
     if (user) {
-      user.devices = user.devices.filter(d => d.deviceId !== deviceId);
+      user.devices = user.devices.filter(d => d.refreshToken !== refreshToken);
       await user.save();
     }
   }
 
   static async _generateTokens(user, deviceInfo = {}) {
+    // Callers may pass a user-agent string instead of an object
+    if (typeof deviceInfo === 'string') {
+      deviceInfo = { deviceType: deviceInfo };
+    }
+
     const accessToken = this.generateAccessToken(user._id);
     const refreshToken = this.generateRefreshToken(user._id);
 

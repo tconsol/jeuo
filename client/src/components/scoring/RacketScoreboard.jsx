@@ -63,7 +63,7 @@ export default function RacketScoreboard({ score, sport }) {
               (score.gamesWon?.[lead] || 0) >= Math.floor((score.bestOf || 3) / 2);
             return (
               <p className={`text-center mt-2 text-sm font-medium ${isMatchPoint ? 'text-red-300' : 'text-yellow-300'}`}>
-                {isMatchPoint ? 'Match Point' : 'Game Point'} — P{lead + 1}
+                {isMatchPoint ? 'Match Point' : 'Game Point'}   P{lead + 1}
               </p>
             );
           }
@@ -75,7 +75,7 @@ export default function RacketScoreboard({ score, sport }) {
       <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
         <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Rally Stats</h3>
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="font-semibold text-gray-900">P1</div><div className="text-gray-400">—</div><div className="font-semibold text-gray-900">P2</div>
+          <div className="font-semibold text-gray-900">P1</div><div className="text-gray-400"> </div><div className="font-semibold text-gray-900">P2</div>
           {[
             ['Points Won', score.pointsWon?.[0] || 0, score.pointsWon?.[1] || 0],
             ['Longest Rally', score.longestRally?.[0] || '-', score.longestRally?.[1] || '-'],

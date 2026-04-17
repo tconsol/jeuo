@@ -1,4 +1,4 @@
-# Athléon — Sports Ecosystem Platform
+# Athléon   Sports Ecosystem Platform
 
 A full-stack MERN monorepo: venue booking + social + real-time scoring + tournaments.
 

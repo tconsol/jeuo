@@ -3,19 +3,21 @@ const { AppError } = require('../middleware/error');
 
 exports.lockSlot = async (req, res, next) => {
   try {
-    const lock = await BookingService.lockSlot(req.body, req.user._id);
+    const { venueId, date, slot, court } = req.body;
+    const lock = await BookingService.lockSlot(req.user._id, venueId, date, slot, court);
     res.json({ success: true, data: lock });
   } catch (err) {
-    next(new AppError(err.message, 409));
+    next(new AppError(err.message, err.statusCode || 409));
   }
 };
 
 exports.confirmBooking = async (req, res, next) => {
   try {
-    const booking = await BookingService.confirmBooking(req.body.lockId, req.user._id, req.body);
+    const { bookingId, lockToken, paymentId } = req.body;
+    const booking = await BookingService.confirmBooking(bookingId, lockToken, paymentId);
     res.status(201).json({ success: true, data: { booking } });
   } catch (err) {
-    next(new AppError(err.message, 400));
+    next(new AppError(err.message, err.statusCode || 400));
   }
 };
 
@@ -31,7 +33,7 @@ exports.getMyBookings = async (req, res, next) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(filter)
-        .populate('venue', 'name address sport images')
+        .populate('venue', 'name location sports images')
         .sort({ date: -1 })
         .skip(skip).limit(limit).lean(),
       Booking.countDocuments(filter),
@@ -47,7 +49,7 @@ exports.getById = async (req, res, next) => {
   try {
     const { Booking } = require('../models');
     const booking = await Booking.findOne({ _id: req.params.id, user: req.user._id })
-      .populate('venue', 'name address sport images courts');
+      .populate('venue', 'name location sports images courts');
     if (!booking) return next(new AppError('Booking not found', 404));
     res.json({ success: true, data: { booking } });
   } catch (err) {

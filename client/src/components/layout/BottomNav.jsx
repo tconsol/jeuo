@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiMapPin, FiUsers, FiTv, FiAward } from 'react-icons/fi';
+import { FiHome, FiMapPin, FiUsers, FiPlay, FiAward } from 'react-icons/fi';
 
 const tabs = [
   { to: '/', icon: FiHome, label: 'Home' },
   { to: '/venues', icon: FiMapPin, label: 'Venues' },
   { to: '/activities', icon: FiUsers, label: 'Play' },
-  { to: '/matches/live', icon: FiTv, label: 'Live' },
+  { to: '/matches/my', icon: FiPlay, label: 'Matches' },
   { to: '/tournaments', icon: FiAward, label: 'Compete' },
 ];
 

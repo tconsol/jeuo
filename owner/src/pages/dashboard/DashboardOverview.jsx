@@ -17,7 +17,7 @@ export default function DashboardOverview() {
       <StatsCard title="Total Revenue" value={formatCurrencyLocal(stats?.totalRevenue || 0)} icon="💰" change={stats?.revenueChange} />
       <StatsCard title="Bookings Today" value={stats?.bookingsToday || 0} icon="📅" />
       <StatsCard title="Active Venues" value={stats?.activeVenues || 0} icon="🏟️" />
-      <StatsCard title="Avg Rating" value={stats?.avgRating?.toFixed(1) || '—'} icon="⭐" />
+      <StatsCard title="Avg Rating" value={stats?.avgRating?.toFixed(1) || ' '} icon="⭐" />
     </div>
   );
 }

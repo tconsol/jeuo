@@ -17,12 +17,31 @@ const userSchema = new mongoose.Schema({
     default: 'player',
   },
 
+  // Subscription tier
+  subscription: {
+    plan: { type: String, enum: ['free', 'pro', 'premium'], default: 'free' },
+    startDate: Date,
+    endDate: Date,
+    isActive: { type: Boolean, default: false },
+    autoRenew: { type: Boolean, default: false },
+  },
+
   // Player profile
   sports: [{
     sport: { type: String, enum: ['cricket', 'football', 'basketball', 'tennis', 'badminton', 'table_tennis', 'volleyball'] },
     skillLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced', 'professional'] },
     position: String,
   }],
+
+  // Player availability
+  availability: {
+    type: String,
+    enum: ['available', 'busy', 'playing', 'injured', 'offline'],
+    default: 'available',
+  },
+
+  // Onboarding
+  onboardingCompleted: { type: Boolean, default: false },
 
   // Location
   location: {
@@ -55,12 +74,15 @@ const userSchema = new mongoose.Schema({
   },
 
   // Session tracking
-  devices: [{
-    deviceId: String,
-    deviceType: String,
-    lastActive: Date,
-    refreshToken: { type: String, select: false },
-  }],
+  devices: {
+    type: [{
+      deviceId: String,
+      deviceType: String,
+      lastActive: Date,
+      refreshToken: String,
+    }],
+    select: false,
+  },
 
   isVerified: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },

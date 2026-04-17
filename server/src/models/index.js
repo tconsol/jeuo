@@ -9,6 +9,8 @@ const Payment = require('./Payment');
 const Notification = require('./Notification');
 const Tournament = require('./Tournament');
 const AuditLog = require('./AuditLog');
+const Team = require('./Team');
+const Dispute = require('./Dispute');
 
 module.exports = {
   User,
@@ -22,4 +24,6 @@ module.exports = {
   Notification,
   Tournament,
   AuditLog,
+  Team,
+  Dispute,
 };

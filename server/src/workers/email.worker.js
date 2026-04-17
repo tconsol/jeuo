@@ -7,7 +7,7 @@ let emailWorker = null;
 function createEmailWorker() {
   const redis = getRedis();
 
-  // Email worker — sends transactional emails
+  // Email worker   sends transactional emails
   emailWorker = new Worker(
     'email',
     async (job) => {

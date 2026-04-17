@@ -12,6 +12,15 @@ exports.getProfile = async (req, res, next) => {
   }
 };
 
+exports.getMyStats = async (req, res, next) => {
+  try {
+    const stats = await UserService.getStats(req.user._id);
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const user = await UserService.updateProfile(req.user._id, req.body);

@@ -196,7 +196,7 @@ class BasketballScoring {
 
       case 'quarter_end': {
         if (state.isOvertime) {
-          // Check if scores still tied — another OT
+          // Check if scores still tied   another OT
           if (state.home.points === state.away.points) {
             state.overtime += 1;
             const newPeriodIdx = state.totalPeriods + state.overtime - 1;

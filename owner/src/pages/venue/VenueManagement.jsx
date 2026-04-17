@@ -11,8 +11,8 @@ export default function VenueManagement() {
 
   const columns = [
     { key: 'name', label: 'Venue Name' },
-    { key: 'city', label: 'City', render: (_, row) => row.address?.city || '—' },
-    { key: 'sports', label: 'Sports', render: (v) => v?.join(', ') || '—' },
+    { key: 'city', label: 'City', render: (_, row) => row.address?.city || ' ' },
+    { key: 'sports', label: 'Sports', render: (v) => v?.join(', ') || ' ' },
     { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v} /> },
     { key: 'actions', label: '', render: (_, row) => (
       <Link to={`/venues/${row._id}/edit`} className="text-xs text-indigo-600 hover:underline" onClick={(e) => e.stopPropagation()}>

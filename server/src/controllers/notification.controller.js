@@ -36,3 +36,13 @@ exports.deleteNotification = async (req, res, next) => {
     next(new AppError(err.message, 400));
   }
 };
+
+exports.getUnreadCount = async (req, res, next) => {
+  try {
+    const { Notification } = require('../models');
+    const count = await Notification.countDocuments({ user: req.user._id, isRead: false });
+    res.json({ success: true, data: { count } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};

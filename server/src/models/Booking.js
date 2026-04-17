@@ -54,6 +54,17 @@ const bookingSchema = new mongoose.Schema({
     enum: ['none', 'pending', 'processed', 'failed'],
     default: 'none',
   },
+  refundPercentage: { type: Number, default: 0 },
+
+  // Cancellation policy (auto-calculated)
+  cancellationPolicy: {
+    // 3+ days before: 100% refund, 2 days: 50%, 1 day: 20%, match day: 0%
+    type: { type: String, enum: ['flexible', 'moderate', 'strict'], default: 'moderate' },
+    rules: [{
+      daysBefore: Number,
+      refundPercent: Number,
+    }],
+  },
 
   // Lock mechanism for concurrency control
   lockedUntil: Date,

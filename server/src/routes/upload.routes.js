@@ -12,7 +12,7 @@ const gcs = new Storage({
     type: 'service_account',
     project_id: process.env.GCS_PROJECT_ID,
     private_key_id: process.env.GCP_PRIVATE_KEY_ID,
-    // dotenv stores \n as literal \\n — restore actual newlines
+    // dotenv stores \n as literal \\n   restore actual newlines
     private_key: (process.env.GCP_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
     client_email: process.env.GCP_CLIENT_EMAIL,
     client_id: process.env.GCP_CLIENT_ID,
@@ -40,7 +40,7 @@ const upload = multer({
   fileFilter,
 });
 
-// POST /api/v1/upload — upload a single image → GCS
+// POST /api/v1/upload   upload a single image → GCS
 router.post('/', authenticate, upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });

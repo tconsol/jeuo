@@ -7,7 +7,7 @@ import { formatDate, sportIcon } from '../../utils';
 export default function MatchHistory() {
   const { data: matches, isLoading } = useQuery({
     queryKey: ['match-history'],
-    queryFn: () => matchService.getAll({ status: 'completed', limit: 50 }).then((r) => r.data.data),
+    queryFn: () => matchService.getAll({ status: 'completed', limit: 50 }).then((r) => r.data.matches),
   });
 
   if (isLoading) return <LoadingSpinner className="py-20" />;
@@ -24,10 +24,10 @@ export default function MatchHistory() {
               <div className="flex items-center justify-between mb-2">
                 <span className="flex items-center gap-2">
                   <span className="text-lg">{sportIcon(m.sport)}</span>
-                  <span className="font-medium text-gray-900">{m.teamA?.name} vs {m.teamB?.name}</span>
+                  <span className="font-medium text-gray-900">{m.teams?.home?.name || 'Team A'} vs {m.teams?.away?.name || 'Team B'}</span>
                 </span>
-                <Badge variant={m.result === 'won' ? 'success' : m.result === 'lost' ? 'danger' : 'default'}>
-                  {m.result || 'Draw'}
+                <Badge variant={m.result?.winner === 'home' || m.result?.winner === 'away' ? 'success' : 'default'}>
+                  {m.result?.summary || m.result?.winner || 'Draw'}
                 </Badge>
               </div>
               <p className="text-xs text-gray-500">{formatDate(m.date)} • {m.venue?.name}</p>

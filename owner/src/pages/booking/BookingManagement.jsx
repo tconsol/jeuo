@@ -23,8 +23,8 @@ export default function BookingManagement() {
   });
 
   const columns = [
-    { key: 'user', label: 'Customer', render: (_, row) => row.user?.name || '—' },
-    { key: 'venue', label: 'Venue', render: (_, row) => row.venue?.name || '—' },
+    { key: 'user', label: 'Customer', render: (_, row) => row.user?.name || ' ' },
+    { key: 'venue', label: 'Venue', render: (_, row) => row.venue?.name || ' ' },
     { key: 'date', label: 'Date', render: (v) => new Date(v).toLocaleDateString('en-IN') },
     { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v} /> },
     { key: 'actions', label: '', render: (_, row) => row.status === 'pending' && (
