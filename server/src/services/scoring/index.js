@@ -174,10 +174,12 @@ class ScoringService {
     // Publish real-time score update
     try {
       const redis = getRedis();
+      const freshMatch = await Match.findById(matchId).select('commentary').lean();
       await redis.publish(`match:${matchId}:score`, JSON.stringify({
         event: event.toObject(),
         score: newScore,
         scoreVersion: updated.scoringVersion,
+        commentary: freshMatch?.commentary || [],
       }));
     } catch (err) {
       logger.warn({ matchId, err: err.message }, 'Failed to publish score update');
@@ -463,15 +465,41 @@ class ScoringService {
     const innings = state.currentInningsData;
     if (!innings) throw new Error('No active innings');
 
-    if (playerData.striker) innings.batsmen.striker = playerData.striker;
-    if (playerData.nonStriker) innings.batsmen.nonStriker = playerData.nonStriker;
-    if (playerData.bowler) innings.currentBowler = playerData.bowler;
+    if (playerData.striker) innings.batsmen.striker = playerData.striker.toString();
+    if (playerData.nonStriker) innings.batsmen.nonStriker = playerData.nonStriker.toString();
+    if (playerData.bowler) innings.currentBowler = playerData.bowler.toString();
     if (playerData.battingTeam) innings.battingTeam = playerData.battingTeam;
     if (playerData.bowlingTeam) innings.bowlingTeam = playerData.bowlingTeam;
 
     match.scoreSnapshot = state;
     match.markModified('scoreSnapshot');
     await match.save();
+
+    // Persist player setup as an event so deriveScoreFromEvents can replay it correctly.
+    // Without this, every delivery re-derivation loses battingTeam/striker/bowler.
+    if (match.sport === 'cricket') {
+      const lastSeq = await Event.findOne({ match: matchId })
+        .sort({ sequence: -1 }).select('sequence').lean();
+      const nextSeq = (lastSeq?.sequence || 0) + 1;
+      await Event.create({
+        match: matchId,
+        sport: 'cricket',
+        type: 'players_set',
+        team: playerData.battingTeam || innings.battingTeam,
+        player: playerData.striker || innings.batsmen?.striker,
+        payload: {
+          battingTeam: playerData.battingTeam,
+          bowlingTeam: playerData.bowlingTeam,
+          striker: playerData.striker,
+          nonStriker: playerData.nonStriker,
+          bowler: playerData.bowler,
+        },
+        scorer: userId,
+        sequence: nextSeq,
+        idempotencyKey: `${matchId}-players_set-${nextSeq}`,
+        syncedAt: new Date(),
+      });
+    }
 
     return match.scoreSnapshot;
   }

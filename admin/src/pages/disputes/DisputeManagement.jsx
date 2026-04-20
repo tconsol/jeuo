@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { disputeService } from '../../services';
-import { DataTable, StatusBadge } from '../../components';
+import { DataTable, StatusBadge, CustomSelect } from '../../components';
+
+const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'all', label: 'All' },
+];
 
 export default function DisputeManagement() {
   const qc = useQueryClient();
@@ -37,11 +43,7 @@ export default function DisputeManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Disputes</h1>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg">
-          <option value="open">Open</option>
-          <option value="resolved">Resolved</option>
-          <option value="all">All</option>
-        </select>
+        <CustomSelect options={STATUS_OPTIONS} value={filter} onChange={setFilter} className="w-36" />
       </div>
       {isLoading ? <div className="animate-pulse h-60 bg-gray-100 rounded-xl" /> : <DataTable columns={columns} data={disputes} />}
     </div>

@@ -100,7 +100,7 @@ export default function TournamentDetail() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-      className="max-w-2xl mx-auto pt-4 pb-28 space-y-4 px-4">
+      className="max-w-4xl mx-auto pt-4 pb-28 space-y-4 px-4">
 
       {/* Hero Card */}
       <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">

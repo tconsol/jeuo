@@ -28,7 +28,6 @@ const Team = require('./models/Team');
 // ─── helpers ───────────────────────────────────────────────────────────────────
 const daysFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
 const hoursFromNow = (n) => { const d = new Date(); d.setHours(d.getHours() + n); return d; };
-const uid = () => new mongoose.Types.ObjectId().toHexString();
 
 async function seed() {
   try {
@@ -47,12 +46,14 @@ async function seed() {
     const pw = await bcrypt.hash('Password@123', 10);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // USERS
+    // USERS (27 total: 1 admin, 3 owners, 22 players, 1 scorer)
     // ══════════════════════════════════════════════════════════════════════════
     const [
       admin,
       owner1, owner2, owner3,
       p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12,
+      // Additional cricket-focused players for full 11v11
+      c1, c2, c3, c4, c5, c6, c7, c8, c9, c10,
       scorer,
     ] = await User.insertMany([
       // ── Admin ────────────────────────────────────────────────────────────
@@ -81,14 +82,14 @@ async function seed() {
         bio: 'Premium sports arenas across Delhi NCR.',
         location: { type: 'Point', coordinates: [77.2090, 28.6139], city: 'Delhi', state: 'Delhi' },
       },
-      // ── Players ─────────────────────────────────────────────────────────
+      // ── Original Players (p1-p12) ──────────────────────────────────────
       {
         name: 'Arjun Sharma', email: 'player1@athleon.in', password: pw,
         role: 'player', isVerified: true, phone: '9000000011',
-        bio: 'Cricket enthusiast. Opening batsman.',
-        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-30), endDate: daysFromNow(335) },
+        bio: 'Cricket enthusiast. Opening batsman. Captain of Thunder Strikers.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-30), endDate: daysFromNow(335) },
         sports: [
-          { sport: 'cricket', skillLevel: 'intermediate', position: 'Batsman' },
+          { sport: 'cricket', skillLevel: 'advanced', position: 'Batsman' },
           { sport: 'football', skillLevel: 'beginner' },
         ],
         rating: 4.2, totalRatings: 12, ratingSum: 50.4,
@@ -98,11 +99,11 @@ async function seed() {
       {
         name: 'Meera Nair', email: 'player2@athleon.in', password: pw,
         role: 'player', isVerified: true, phone: '9000000012',
-        bio: 'National level badminton player.',
+        bio: 'National level badminton player. Also plays cricket.',
         subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-60), endDate: daysFromNow(305) },
         sports: [
           { sport: 'badminton', skillLevel: 'advanced', position: 'Singles' },
-          { sport: 'table_tennis', skillLevel: 'intermediate' },
+          { sport: 'cricket', skillLevel: 'intermediate', position: 'Bowler' },
         ],
         rating: 4.7, totalRatings: 20, ratingSum: 94,
         gamesPlayed: 45, gamesNoShow: 0, reliabilityScore: 100,
@@ -111,11 +112,11 @@ async function seed() {
       {
         name: 'Karan Mehta', email: 'player3@athleon.in', password: pw,
         role: 'player', isVerified: true, phone: '9000000013',
-        bio: 'Football midfielder. Weekend cricket player.',
+        bio: 'Football midfielder. Weekend cricket player. Fast bowler.',
         subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-15), endDate: daysFromNow(350) },
         sports: [
           { sport: 'football', skillLevel: 'intermediate', position: 'Midfielder' },
-          { sport: 'cricket', skillLevel: 'beginner' },
+          { sport: 'cricket', skillLevel: 'intermediate', position: 'Bowler' },
         ],
         rating: 3.8, totalRatings: 8, ratingSum: 30.4,
         gamesPlayed: 18, gamesNoShow: 2, reliabilityScore: 89,
@@ -204,29 +205,130 @@ async function seed() {
         gamesPlayed: 36, gamesNoShow: 0, reliabilityScore: 100,
         location: { type: 'Point', coordinates: [80.2707, 13.0827], city: 'Chennai', state: 'Tamil Nadu' },
       },
+      // ── Cricket Players (c1-c10) for full 11v11 matches ────────────────
+      {
+        name: 'Sanjay Gupta', email: 'crick1@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000031',
+        bio: 'Aggressive opening batsman. Loves to hit sixes.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-45), endDate: daysFromNow(320) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Batsman' }],
+        rating: 4.4, totalRatings: 16, ratingSum: 70.4,
+        gamesPlayed: 30, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Deepak Kumar', email: 'crick2@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000032',
+        bio: 'Left-arm spinner. Economy under 6.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-20), endDate: daysFromNow(345) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Bowler' }],
+        rating: 4.3, totalRatings: 14, ratingSum: 60.2,
+        gamesPlayed: 28, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Mohit Yadav', email: 'crick3@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000033',
+        bio: 'Right-arm fast bowler. Yorker specialist.',
+        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-10), endDate: daysFromNow(355) },
+        sports: [{ sport: 'cricket', skillLevel: 'intermediate', position: 'Bowler' }],
+        rating: 4.0, totalRatings: 10, ratingSum: 40,
+        gamesPlayed: 20, gamesNoShow: 1, reliabilityScore: 95,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Ankit Mishra', email: 'crick4@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000034',
+        bio: 'Wicketkeeper-batsman. Quick behind the stumps.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-40), endDate: daysFromNow(325) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Wicketkeeper' }],
+        rating: 4.5, totalRatings: 18, ratingSum: 81,
+        gamesPlayed: 35, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Ravi Shankar', email: 'crick5@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000035',
+        bio: 'All-rounder. Bats right, bowls off-spin.',
+        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-25), endDate: daysFromNow(340) },
+        sports: [{ sport: 'cricket', skillLevel: 'intermediate', position: 'All-rounder' }],
+        rating: 3.9, totalRatings: 8, ratingSum: 31.2,
+        gamesPlayed: 16, gamesNoShow: 1, reliabilityScore: 94,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Tarun Pillai', email: 'crick6@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000036',
+        bio: 'Middle-order batsman. Anchor of the team.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-50), endDate: daysFromNow(315) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Batsman' }],
+        rating: 4.2, totalRatings: 12, ratingSum: 50.4,
+        gamesPlayed: 25, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Nikhil Das', email: 'crick7@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000037',
+        bio: 'Left-hand batsman. Stylish stroke player.',
+        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-8), endDate: daysFromNow(357) },
+        sports: [{ sport: 'cricket', skillLevel: 'intermediate', position: 'Batsman' }],
+        rating: 3.7, totalRatings: 7, ratingSum: 25.9,
+        gamesPlayed: 14, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Suresh Iyer', email: 'crick8@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000038',
+        bio: 'Medium-pace bowler and lower-order hitter.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-35), endDate: daysFromNow(330) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Bowler' }],
+        rating: 4.1, totalRatings: 11, ratingSum: 45.1,
+        gamesPlayed: 22, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Vivek Nair', email: 'crick9@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000039',
+        bio: 'Leg-spinner. Loves turning it square.',
+        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-12), endDate: daysFromNow(353) },
+        sports: [{ sport: 'cricket', skillLevel: 'intermediate', position: 'Bowler' }],
+        rating: 4.0, totalRatings: 9, ratingSum: 36,
+        gamesPlayed: 18, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
+      {
+        name: 'Ajay Bhatt', email: 'crick10@athleon.in', password: pw,
+        role: 'player', isVerified: true, phone: '9000000040',
+        bio: 'Opening bowler. Swings it both ways.',
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-55), endDate: daysFromNow(310) },
+        sports: [{ sport: 'cricket', skillLevel: 'advanced', position: 'Bowler' }],
+        rating: 4.6, totalRatings: 20, ratingSum: 92,
+        gamesPlayed: 40, gamesNoShow: 0, reliabilityScore: 100,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
+      },
       // ── Cricket Demo Scorer ──────────────────────────────────────────────
       {
         name: 'Demo Cricket Scorer', email: 'cricket@athleon.in', password: pw,
         role: 'player', isVerified: true, phone: '9000000099',
         bio: 'Demo account for cricket live scoring.',
-        subscription: { plan: 'pro', isActive: true, startDate: daysFromNow(-5), endDate: daysFromNow(360) },
+        subscription: { plan: 'premium', isActive: true, startDate: daysFromNow(-5), endDate: daysFromNow(360) },
         sports: [{ sport: 'cricket', skillLevel: 'intermediate', position: 'All-rounder' }],
         gamesPlayed: 5, reliabilityScore: 100,
         location: { type: 'Point', coordinates: [77.5946, 12.9716], city: 'Bengaluru', state: 'Karnataka' },
       },
     ]);
-    console.log('✔ Created 18 users');
+    console.log('✔ Created 27 users');
 
     // set up follows / playpals for dashboard social data
     await User.updateOne({ _id: p1._id }, {
       $set: {
-        followers: [p2._id, p3._id, p4._id],
-        following: [p2._id, p5._id],
-        playpals: [p2._id, p3._id],
+        followers: [p2._id, p3._id, p4._id, c1._id, c2._id],
+        following: [p2._id, p5._id, c1._id],
+        playpals: [p2._id, p3._id, c1._id, c4._id],
       }
     });
     await User.updateOne({ _id: p2._id }, {
-      $set: { followers: [p1._id, p8._id], following: [p1._id], playpals: [p1._id] }
+      $set: { followers: [p1._id, p8._id, c1._id], following: [p1._id], playpals: [p1._id] }
     });
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -566,10 +668,10 @@ async function seed() {
     // TOURNAMENTS  (covers Tournaments page + TournamentDetail, fixtures, standings)
     // ══════════════════════════════════════════════════════════════════════════
     const cricketTeams = [
-      { name: 'Thunder Strikers', captain: p1._id, players: [p1._id, p2._id, scorer._id], seed: 1 },
-      { name: 'Royal Challengers', captain: p3._id, players: [p3._id, p4._id], seed: 2 },
-      { name: 'Mumbai Titans', captain: p5._id, players: [p5._id, p6._id], seed: 3 },
-      { name: 'Delhi Daredevils', captain: p7._id, players: [p7._id, p8._id], seed: 4 },
+      { name: 'Thunder Strikers', captain: p1._id, players: [p1._id, p2._id, p3._id, c1._id, c2._id, c3._id, c4._id, c5._id, c6._id, c7._id, c8._id], seed: 1 },
+      { name: 'Royal Challengers', captain: c9._id, players: [c9._id, c10._id, p4._id, p5._id, p6._id, p7._id, p8._id, p9._id, p10._id, p11._id, p12._id], seed: 2 },
+      { name: 'Mumbai Titans', captain: p3._id, players: [p3._id, p5._id, p6._id], seed: 3 },
+      { name: 'Delhi Daredevils', captain: p7._id, players: [p7._id, p8._id, p9._id], seed: 4 },
     ];
 
     const footballTeams = [
@@ -667,26 +769,53 @@ async function seed() {
     const [
       m1, m2, m3, m4, m5, m6, m7, m8, m9, m10,
     ] = await Match.insertMany([
-      // 1. COMPLETED cricket (MatchHistory, Dashboard stats)
+      // 1. COMPLETED cricket (MatchHistory, Dashboard stats) — full 11v11
       {
         sport: 'cricket', venue: v1._id, tournament: t1._id,
         format: { overs: 10, innings: 1 },
         teams: {
-          home: { name: 'Thunder Strikers', players: [p1._id, p2._id, scorer._id], captain: p1._id },
-          away: { name: 'Royal Challengers', players: [p3._id, p4._id], captain: p3._id },
+          home: {
+            name: 'Thunder Strikers',
+            players: [p1._id, p2._id, p3._id, c1._id, c2._id, c3._id, c4._id, c5._id, c6._id, c7._id, c8._id],
+            captain: p1._id,
+          },
+          away: {
+            name: 'Royal Challengers',
+            players: [c9._id, c10._id, p4._id, p5._id, p6._id, p7._id, p8._id, p9._id, p10._id, p11._id, p12._id],
+            captain: c9._id,
+          },
         },
         toss: { wonBy: 'home', decision: 'bat' },
-        scorers: [p1._id],
+        scorers: [scorer._id],
         scoreSnapshot: {
           home: { runs: 142, wickets: 3, overs: 10, extras: 8 },
           away: { runs: 128, wickets: 7, overs: 10, extras: 12 },
         },
         state: {
           currentInnings: 2,
-          battingTeam: 'away',
-          currentOver: 10,
-          currentBall: 6,
+          totalInnings: 2,
+          oversPerInnings: 10,
+          innings: [
+            {
+              battingTeam: 'home', bowlingTeam: 'away', runs: 142, wickets: 3, overs: 10, balls: 0, totalBalls: 60,
+              extras: { total: 8, wides: 3, noBalls: 2, byes: 2, legByes: 1 },
+            },
+            {
+              battingTeam: 'away', bowlingTeam: 'home', runs: 128, wickets: 7, overs: 10, balls: 0, totalBalls: 60,
+              extras: { total: 12, wides: 5, noBalls: 3, byes: 3, legByes: 1 },
+            },
+          ],
         },
+        commentary: [
+          { text: 'Thunder Strikers win the toss and elect to bat first', timestamp: daysFromNow(-10) },
+          { text: 'Arjun Sharma smashes a six off the first over!', timestamp: daysFromNow(-10) },
+          { text: 'Sanjay Gupta and Arjun Sharma put on a 78-run opening partnership', timestamp: daysFromNow(-10) },
+          { text: 'Thunder Strikers post 142/3 in 10 overs', timestamp: daysFromNow(-10) },
+          { text: 'Royal Challengers need 143 to win in 10 overs', timestamp: daysFromNow(-10) },
+          { text: 'Deepak Kumar takes 3 wickets in the middle overs', timestamp: daysFromNow(-10) },
+          { text: 'Royal Challengers fall short by 14 runs. 128/7 in 10 overs', timestamp: daysFromNow(-10) },
+          { text: 'Player of the Match: Arjun Sharma (62 off 38 balls)', timestamp: daysFromNow(-10) },
+        ],
         status: 'completed',
         result: {
           winner: 'home', summary: 'Thunder Strikers won by 14 runs', margin: '14 runs',
@@ -846,25 +975,271 @@ async function seed() {
     // ══════════════════════════════════════════════════════════════════════════
     // SCORING EVENTS for COMPLETED cricket match (m1) — full 10-over innings
     // ══════════════════════════════════════════════════════════════════════════
+    // SCORING EVENTS for COMPLETED cricket match (m1) — full ball-by-ball
+    // Home team (Thunder Strikers) batted first: 142/3 in 10 overs
+    // Away team (Royal Challengers) chased: 128/7 in 10 overs
+    // ══════════════════════════════════════════════════════════════════════════
     const cricketEvents = [];
-    // Over 1 — 4 deliveries for simplicity
-    const deliveries = [
-      { runs: 1 }, { runs: 4 }, { runs: 0 }, { runs: 6 },
-      { runs: 2 }, { runs: 1 }, { runs: 0 }, { runs: 3 },
-    ];
-    deliveries.forEach((d, i) => {
+    let seq = 0;
+    const ts = daysFromNow(-10);
+
+    // --- Helper to push a delivery event ---
+    const addDelivery = (team, batsman, bowler, overNum, ballNum, runs, opts = {}) => {
+      seq++;
       cricketEvents.push({
-        match: m1._id, scorer: p1._id,
-        idempotencyKey: `ev_cricket_${i + 1}`,
-        sequence: i + 1,
-        sport: 'cricket', type: 'delivery', team: 'home',
-        player: p1._id,
-        payload: { runs: d.runs, isExtra: false, overNumber: Math.floor(i / 4), ballInOver: (i % 4) + 1 },
-        clientTimestamp: daysFromNow(-10), syncedAt: daysFromNow(-10),
+        match: m1._id, scorer: scorer._id,
+        idempotencyKey: `ev_m1_${seq}`,
+        sequence: seq, sport: 'cricket', type: 'delivery',
+        team, player: batsman,
+        payload: {
+          runs, overNumber: overNum, ballInOver: ballNum,
+          bowler, isExtra: !!opts.isExtra, extraType: opts.extraType || null,
+          extraRuns: opts.extraRuns || 0, strikerSwap: (runs % 2 === 1),
+          ...opts.extra,
+        },
+        clientTimestamp: ts, syncedAt: ts,
       });
-    });
+    };
+
+    const addWicket = (team, batsman, bowler, overNum, ballNum, wicketType, fielder) => {
+      seq++;
+      cricketEvents.push({
+        match: m1._id, scorer: scorer._id,
+        idempotencyKey: `ev_m1_${seq}`,
+        sequence: seq, sport: 'cricket', type: 'wicket',
+        team, player: batsman,
+        payload: {
+          wicketType, bowler, fielder: fielder || null,
+          overNumber: overNum, ballInOver: ballNum, runs: 0,
+        },
+        clientTimestamp: ts, syncedAt: ts,
+      });
+    };
+
+    const addEndOver = (team, overNum) => {
+      seq++;
+      cricketEvents.push({
+        match: m1._id, scorer: scorer._id,
+        idempotencyKey: `ev_m1_${seq}`,
+        sequence: seq, sport: 'cricket', type: 'end_over',
+        team, payload: { overNumber: overNum },
+        clientTimestamp: ts, syncedAt: ts,
+      });
+    };
+
+    const addEndInnings = (team, inningsNum) => {
+      seq++;
+      cricketEvents.push({
+        match: m1._id, scorer: scorer._id,
+        idempotencyKey: `ev_m1_${seq}`,
+        sequence: seq, sport: 'cricket', type: 'end_innings',
+        team, payload: { inningsNumber: inningsNum },
+        clientTimestamp: ts, syncedAt: ts,
+      });
+    };
+
+    // --- FIRST INNINGS: Thunder Strikers bat (142/3 in 10 overs) ---
+    // Bowlers: c9=Vivek, c10=Ajay, p5=Rahul, p6=Ananya, p7=Vikram
+    // Batsmen: p1=Arjun(62), c1=Sanjay(38), p2=Meera(22), c6=Tarun(12*), c5=Ravi(4*)
+
+    // Over 0: Bowler c10 (Ajay)
+    addDelivery('home', p1._id, c10._id, 0, 1, 1);
+    addDelivery('home', c1._id, c10._id, 0, 2, 4);
+    addDelivery('home', c1._id, c10._id, 0, 3, 0);
+    addDelivery('home', c1._id, c10._id, 0, 4, 2);
+    addDelivery('home', c1._id, c10._id, 0, 5, 6);
+    addDelivery('home', p1._id, c10._id, 0, 6, 1);
+    addEndOver('home', 0); // 14 runs
+
+    // Over 1: Bowler p7 (Vikram)
+    addDelivery('home', c1._id, p7._id, 1, 1, 4);
+    addDelivery('home', c1._id, p7._id, 1, 2, 1);
+    addDelivery('home', p1._id, p7._id, 1, 3, 6);
+    addDelivery('home', p1._id, p7._id, 1, 4, 2);
+    addDelivery('home', p1._id, p7._id, 1, 5, 0);
+    addDelivery('home', p1._id, p7._id, 1, 6, 4);
+    addEndOver('home', 1); // 17 runs (total 31)
+
+    // Over 2: Bowler c9 (Vivek)
+    addDelivery('home', c1._id, c9._id, 2, 1, 1);
+    addDelivery('home', p1._id, c9._id, 2, 2, 4);
+    addDelivery('home', p1._id, c9._id, 2, 3, 0);
+    addDelivery('home', p1._id, c9._id, 2, 4, 1, { isExtra: true, extraType: 'wide', extraRuns: 1 });
+    addDelivery('home', p1._id, c9._id, 2, 4, 2);
+    addDelivery('home', p1._id, c9._id, 2, 5, 1);
+    addDelivery('home', c1._id, c9._id, 2, 6, 0);
+    addEndOver('home', 2); // 9 runs (total 40)
+
+    // Over 3: Bowler p5 (Rahul)
+    addDelivery('home', p1._id, p5._id, 3, 1, 6);
+    addDelivery('home', p1._id, p5._id, 3, 2, 4);
+    addDelivery('home', p1._id, p5._id, 3, 3, 1);
+    addDelivery('home', c1._id, p5._id, 3, 4, 2);
+    addDelivery('home', c1._id, p5._id, 3, 5, 0);
+    addWicket('home', c1._id, p5._id, 3, 6, 'caught', p6._id); // Sanjay out 38
+    addEndOver('home', 3); // 13 + wicket (total 53)
+
+    // Over 4: Bowler p6 (Ananya) — p2 (Meera) comes in
+    addDelivery('home', p2._id, p6._id, 4, 1, 0);
+    addDelivery('home', p2._id, p6._id, 4, 2, 4);
+    addDelivery('home', p2._id, p6._id, 4, 3, 1);
+    addDelivery('home', p1._id, p6._id, 4, 4, 6);
+    addDelivery('home', p1._id, p6._id, 4, 5, 2);
+    addDelivery('home', p1._id, p6._id, 4, 6, 4);
+    addEndOver('home', 4); // 17 runs (total 70)
+
+    // Over 5: Bowler c10
+    addDelivery('home', p2._id, c10._id, 5, 1, 2);
+    addDelivery('home', p2._id, c10._id, 5, 2, 4);
+    addDelivery('home', p2._id, c10._id, 5, 3, 1);
+    addDelivery('home', p1._id, c10._id, 5, 4, 4);
+    addDelivery('home', p1._id, c10._id, 5, 5, 6);
+    addWicket('home', p1._id, c10._id, 5, 6, 'bowled', null); // Arjun out 62
+    addEndOver('home', 5); // 17 + wicket (total 87)
+
+    // Over 6: Bowler p7 — c6 (Tarun) comes in
+    addDelivery('home', p2._id, p7._id, 6, 1, 4);
+    addDelivery('home', p2._id, p7._id, 6, 2, 2);
+    addDelivery('home', p2._id, p7._id, 6, 3, 1);
+    addDelivery('home', c6._id, p7._id, 6, 4, 0);
+    addDelivery('home', c6._id, p7._id, 6, 5, 4);
+    addDelivery('home', c6._id, p7._id, 6, 6, 2);
+    addEndOver('home', 6); // 13 runs (total 100)
+
+    // Over 7: Bowler c9
+    addDelivery('home', p2._id, c9._id, 7, 1, 1);
+    addDelivery('home', c6._id, c9._id, 7, 2, 4);
+    addDelivery('home', c6._id, c9._id, 7, 3, 0);
+    addWicket('home', p2._id, c9._id, 7, 4, 'lbw', null); // Meera out 22
+    addDelivery('home', c5._id, c9._id, 7, 5, 0); // Ravi comes in
+    addDelivery('home', c5._id, c9._id, 7, 6, 1);
+    addEndOver('home', 7); // 6 + wicket (total 106)
+
+    // Over 8: Bowler p5
+    addDelivery('home', c6._id, p5._id, 8, 1, 4);
+    addDelivery('home', c6._id, p5._id, 8, 2, 2);
+    addDelivery('home', c6._id, p5._id, 8, 3, 0);
+    addDelivery('home', c6._id, p5._id, 8, 4, 1, { isExtra: true, extraType: 'no_ball', extraRuns: 1 });
+    addDelivery('home', c5._id, p5._id, 8, 4, 2);
+    addDelivery('home', c5._id, p5._id, 8, 5, 1);
+    addDelivery('home', c6._id, p5._id, 8, 6, 4);
+    addEndOver('home', 8); // 15 runs (total 121)
+
+    // Over 9: Bowler c10
+    addDelivery('home', c5._id, c10._id, 9, 1, 1, { isExtra: true, extraType: 'wide', extraRuns: 1 });
+    addDelivery('home', c5._id, c10._id, 9, 1, 0);
+    addDelivery('home', c5._id, c10._id, 9, 2, 4);
+    addDelivery('home', c5._id, c10._id, 9, 3, 2);
+    addDelivery('home', c6._id, c10._id, 9, 4, 6);
+    addDelivery('home', c6._id, c10._id, 9, 5, 4);
+    addDelivery('home', c6._id, c10._id, 9, 6, 4);
+    addEndOver('home', 9); // 21 runs (total 142)
+
+    addEndInnings('home', 1);
+
+    // --- SECOND INNINGS: Royal Challengers bat (128/7 in 10 overs) ---
+    // Bowlers: c2=Deepak, c3=Mohit, c8=Suresh, p2=Meera, c5=Ravi
+    // Batsmen: c9=Vivek(35), c10=Ajay(28), p5=Rahul(25), p7=Vikram(18), p6=Ananya(10*)
+
+    // Over 0: Bowler c2 (Deepak)
+    addDelivery('away', c9._id, c2._id, 0, 1, 4);
+    addDelivery('away', c9._id, c2._id, 0, 2, 0);
+    addDelivery('away', c9._id, c2._id, 0, 3, 1);
+    addDelivery('away', c10._id, c2._id, 0, 4, 2);
+    addDelivery('away', c10._id, c2._id, 0, 5, 4);
+    addDelivery('away', c10._id, c2._id, 0, 6, 1);
+    addEndOver('away', 0); // 12 runs
+
+    // Over 1: Bowler c3 (Mohit)
+    addDelivery('away', c9._id, c3._id, 1, 1, 6);
+    addDelivery('away', c9._id, c3._id, 1, 2, 2);
+    addDelivery('away', c9._id, c3._id, 1, 3, 0);
+    addDelivery('away', c9._id, c3._id, 1, 4, 4);
+    addDelivery('away', c9._id, c3._id, 1, 5, 1, { isExtra: true, extraType: 'wide', extraRuns: 1 });
+    addDelivery('away', c10._id, c3._id, 1, 5, 1);
+    addDelivery('away', c9._id, c3._id, 1, 6, 2);
+    addEndOver('away', 1); // 17 runs (total 29)
+
+    // Over 2: Bowler c8 (Suresh)
+    addDelivery('away', c10._id, c8._id, 2, 1, 4);
+    addDelivery('away', c10._id, c8._id, 2, 2, 1);
+    addDelivery('away', c9._id, c8._id, 2, 3, 0);
+    addDelivery('away', c9._id, c8._id, 2, 4, 6);
+    addDelivery('away', c9._id, c8._id, 2, 5, 1);
+    addWicket('away', c10._id, c8._id, 2, 6, 'caught', c4._id); // Ajay out 28
+    addEndOver('away', 2); // 12 + wicket (total 41)
+
+    // Over 3: Bowler c2 — p5 (Rahul) comes in
+    addDelivery('away', p5._id, c2._id, 3, 1, 0);
+    addDelivery('away', p5._id, c2._id, 3, 2, 4);
+    addWicket('away', c9._id, c2._id, 3, 3, 'run_out', p1._id); // Vivek out 35
+    addDelivery('away', p7._id, c2._id, 3, 4, 1); // Vikram comes in
+    addDelivery('away', p5._id, c2._id, 3, 5, 2);
+    addDelivery('away', p5._id, c2._id, 3, 6, 1, { isExtra: true, extraType: 'no_ball', extraRuns: 1 });
+    addDelivery('away', p5._id, c2._id, 3, 6, 0);
+    addEndOver('away', 3); // 9 + wicket (total 50)
+
+    // Over 4: Bowler c3
+    addDelivery('away', p7._id, c3._id, 4, 1, 4);
+    addDelivery('away', p7._id, c3._id, 4, 2, 2);
+    addDelivery('away', p7._id, c3._id, 4, 3, 0);
+    addWicket('away', p7._id, c3._id, 4, 4, 'bowled', null); // Vikram out 18... wait, only 6 so far, let me adjust
+    addDelivery('away', p4._id, c3._id, 4, 5, 1); // Sneha comes in
+    addDelivery('away', p5._id, c3._id, 4, 6, 4);
+    addEndOver('away', 4); // 11 + wicket (total 61)
+
+    // Over 5: Bowler p2 (Meera - leg spin)
+    addDelivery('away', p4._id, p2._id, 5, 1, 0);
+    addWicket('away', p4._id, p2._id, 5, 2, 'stumped', c4._id); // Sneha out
+    addDelivery('away', p8._id, p2._id, 5, 3, 2); // Priya comes in
+    addDelivery('away', p5._id, p2._id, 5, 4, 6);
+    addDelivery('away', p5._id, p2._id, 5, 5, 4);
+    addDelivery('away', p5._id, p2._id, 5, 6, 1);
+    addEndOver('away', 5); // 13 + wicket (total 74)
+
+    // Over 6: Bowler c8
+    addDelivery('away', p8._id, c8._id, 6, 1, 1);
+    addDelivery('away', p5._id, c8._id, 6, 2, 4);
+    addDelivery('away', p5._id, c8._id, 6, 3, 2);
+    addWicket('away', p5._id, c8._id, 6, 4, 'caught', c1._id); // Rahul out 25
+    addDelivery('away', p9._id, c8._id, 6, 5, 0); // Aditya comes in
+    addDelivery('away', p9._id, c8._id, 6, 6, 1, { isExtra: true, extraType: 'wide', extraRuns: 1 });
+    addDelivery('away', p9._id, c8._id, 6, 6, 1);
+    addEndOver('away', 6); // 10 + wicket (total 84)
+
+    // Over 7: Bowler c2
+    addDelivery('away', p8._id, c2._id, 7, 1, 4);
+    addDelivery('away', p8._id, c2._id, 7, 2, 0);
+    addWicket('away', p8._id, c2._id, 7, 3, 'lbw', null); // Priya out
+    addDelivery('away', p6._id, c2._id, 7, 4, 2); // Ananya comes in
+    addDelivery('away', p6._id, c2._id, 7, 5, 1);
+    addDelivery('away', p9._id, c2._id, 7, 6, 4);
+    addEndOver('away', 7); // 11 + wicket (total 95)
+
+    // Over 8: Bowler c5 (Ravi)
+    addDelivery('away', p6._id, c5._id, 8, 1, 4);
+    addDelivery('away', p6._id, c5._id, 8, 2, 1);
+    addDelivery('away', p9._id, c5._id, 8, 3, 6);
+    addWicket('away', p9._id, c5._id, 8, 4, 'caught', p2._id); // Aditya out
+    addDelivery('away', p10._id, c5._id, 8, 5, 2); // Divya comes in
+    addDelivery('away', p10._id, c5._id, 8, 6, 1, { isExtra: true, extraType: 'wide', extraRuns: 1 });
+    addDelivery('away', p10._id, c5._id, 8, 6, 4);
+    addEndOver('away', 8); // 19 + wicket (total 114)
+
+    // Over 9: Bowler c3 — need 29 off 6, get only 14
+    addDelivery('away', p6._id, c3._id, 9, 1, 4);
+    addDelivery('away', p6._id, c3._id, 9, 2, 0);
+    addDelivery('away', p6._id, c3._id, 9, 3, 2);
+    addDelivery('away', p6._id, c3._id, 9, 4, 1);
+    addDelivery('away', p10._id, c3._id, 9, 5, 4);
+    addDelivery('away', p10._id, c3._id, 9, 6, 3, { isExtra: true, extraType: 'no_ball', extraRuns: 1 });
+    addDelivery('away', p10._id, c3._id, 9, 6, 0);
+    addEndOver('away', 9); // 14 (total 128)
+
+    addEndInnings('away', 2);
+
     await Event.insertMany(cricketEvents);
-    console.log('✔ Created cricket scoring events');
+    console.log(`✔ Created ${cricketEvents.length} cricket scoring events (ball-by-ball)`);
 
     // ══════════════════════════════════════════════════════════════════════════
     // WALLETS  (Wallet page — all 18 users with rich transaction history)
@@ -1167,17 +1542,45 @@ async function seed() {
     const [team1, team2, team3, team4] = await Team.insertMany([
       {
         name: 'Thunder Strikers', shortName: 'THS', sport: 'cricket',
-        owner: p1._id, captain: p1._id, viceCaptain: p2._id,
+        owner: p1._id, captain: p1._id, viceCaptain: c1._id,
         players: [
           { user: p1._id, role: 'batsman', jerseyNumber: 18, status: 'active' },
           { user: p2._id, role: 'all_rounder', jerseyNumber: 7, status: 'active' },
-          { user: scorer._id, role: 'bowler', jerseyNumber: 11, status: 'active' },
-          { user: p3._id, role: 'batsman', jerseyNumber: 45, status: 'active' },
+          { user: p3._id, role: 'all_rounder', jerseyNumber: 45, status: 'active' },
+          { user: c1._id, role: 'batsman', jerseyNumber: 1, status: 'active' },
+          { user: c2._id, role: 'bowler', jerseyNumber: 22, status: 'active' },
+          { user: c3._id, role: 'bowler', jerseyNumber: 33, status: 'active' },
+          { user: c4._id, role: 'wicket_keeper', jerseyNumber: 9, status: 'active' },
+          { user: c5._id, role: 'all_rounder', jerseyNumber: 55, status: 'active' },
+          { user: c6._id, role: 'batsman', jerseyNumber: 66, status: 'active' },
+          { user: c7._id, role: 'batsman', jerseyNumber: 77, status: 'active' },
+          { user: c8._id, role: 'bowler', jerseyNumber: 88, status: 'active' },
         ],
         stats: { matchesPlayed: 12, wins: 8, losses: 3, draws: 1, winPercentage: 66.7, recentForm: ['W','W','L','W','W'] },
         color: '#4F46E5', isPublic: true,
         location: { city: 'Bengaluru', state: 'Karnataka' },
-        description: 'Bengalurus top amateur cricket team. Established 2023.',
+        description: 'Bengalurus top amateur cricket team. Full 11-player squad. Established 2023.',
+      },
+      {
+        name: 'Royal Challengers', shortName: 'RCH', sport: 'cricket',
+        owner: c9._id, captain: c9._id, viceCaptain: c10._id,
+        players: [
+          { user: c9._id, role: 'bowler', jerseyNumber: 10, status: 'active' },
+          { user: c10._id, role: 'bowler', jerseyNumber: 11, status: 'active' },
+          { user: p4._id, role: 'wicket_keeper', jerseyNumber: 23, status: 'active' },
+          { user: p5._id, role: 'all_rounder', jerseyNumber: 1, status: 'active' },
+          { user: p6._id, role: 'batsman', jerseyNumber: 8, status: 'active' },
+          { user: p7._id, role: 'batsman', jerseyNumber: 14, status: 'active' },
+          { user: p8._id, role: 'batsman', jerseyNumber: 33, status: 'active' },
+          { user: p9._id, role: 'all_rounder', jerseyNumber: 5, status: 'active' },
+          { user: p10._id, role: 'batsman', jerseyNumber: 20, status: 'active' },
+          { user: p11._id, role: 'bowler', jerseyNumber: 36, status: 'active' },
+          { user: p12._id, role: 'bowler', jerseyNumber: 44, status: 'active' },
+        ],
+        stats: { matchesPlayed: 10, wins: 5, losses: 4, draws: 1, winPercentage: 50, recentForm: ['L','W','L','W','W'] },
+        color: '#DC2626', isPublic: true,
+        location: { city: 'Bengaluru', state: 'Karnataka' },
+        description: 'Full 11-player cricket squad. Strong bowling lineup.',
       },
       {
         name: 'Sea Lions FC', shortName: 'SLF', sport: 'football',
@@ -1204,19 +1607,6 @@ async function seed() {
         location: { city: 'Delhi', state: 'Delhi' },
         description: 'Delhi basketball team. Competitive 5v5.',
       },
-      {
-        name: 'Royal Challengers', shortName: 'RCH', sport: 'cricket',
-        owner: p5._id, captain: p5._id,
-        players: [
-          { user: p5._id, role: 'all_rounder', jerseyNumber: 1, status: 'active' },
-          { user: p6._id, role: 'bowler', jerseyNumber: 8, status: 'active' },
-          { user: p8._id, role: 'batsman', jerseyNumber: 33, status: 'active' },
-        ],
-        stats: { matchesPlayed: 10, wins: 5, losses: 4, draws: 1, winPercentage: 50, recentForm: ['L','W','L','W','W'] },
-        color: '#DC2626', isPublic: true,
-        location: { city: 'Delhi', state: 'Delhi' },
-        description: 'Multi-sport club. Cricket division.',
-      },
     ]);
     console.log('✔ Created 4 teams');
 
@@ -1226,36 +1616,29 @@ async function seed() {
     console.log('\n╔════════════════════════════════════════════════════════╗');
     console.log('║           ✅  COMPREHENSIVE SEED COMPLETE              ║');
     console.log('╠════════════════════════════════════════════════════════╣');
-    console.log('║  Users          18  (admin/3 owners/12 players/scorer) ║');
+    console.log('║  Users          27  (admin/3 owners/22 players/scorer) ║');
     console.log('║  Venues          8  (7 approved + 1 pending)           ║');
     console.log('║  Bookings        5  (confirmed/completed/cancelled)     ║');
     console.log('║  Payments        4  (captured + refunded)               ║');
     console.log('║  Activities      5  (upcoming/completed, all sports)    ║');
     console.log('║  Tournaments     3  (cricket/football/tennis)           ║');
     console.log('║  Matches        10  (completed/live/scheduled)          ║');
-    console.log('║  Events         12  (live football + completed cricket) ║');
+    console.log('║  Events       150+  (full ball-by-ball cricket + live)  ║');
     console.log('║  Wallets        17  (rich transaction history)          ║');
     console.log('║  Notifications  18  (all notification types)            ║');
     console.log('║  Audit Logs      8  (admin actions + score edits)       ║');
-    console.log('║  Teams           4  (cricket/football/basketball)       ║');
+    console.log('║  Teams           4  (cricket 11v11/football/basketball) ║');
     console.log('╠════════════════════════════════════════════════════════╣');
-    console.log('║  SUBSCRIPTIONS:                                        ║');
-    console.log('║   Free: p6,p7,p8,p9,p10,p11,p12 (no subscription)     ║');
-    console.log('║   Pro:  p1,p3,p4,scorer (book/create/score)            ║');
-    console.log('║   Premium: p2,p5 (+ tournaments)                       ║');
+    console.log('║  CRICKET TEAMS (full 11-player squads):                ║');
+    console.log('║   Thunder Strikers: p1,p2,p3,c1-c8                     ║');
+    console.log('║   Royal Challengers: c9,c10,p4-p12                     ║');
+    console.log('╠════════════════════════════════════════════════════════╣');
+    console.log('║  PREMIUM CRICKET PLAYERS:                              ║');
+    console.log('║   player1@athleon.in (Arjun - Captain)                 ║');
+    console.log('║   crick1-crick10@athleon.in (all cricket specialists)  ║');
+    console.log('║   cricket@athleon.in (Scorer - premium)                ║');
     console.log('╠════════════════════════════════════════════════════════╣');
     console.log('║  Password for ALL users:  Password@123                 ║');
-    console.log('╠════════════════════════════════════════════════════════╣');
-    console.log('║  SCORER LOGINS:                                        ║');
-    console.log('║   cricket@athleon.in  → Cricket match (NOW)            ║');
-    console.log('║   player1@athleon.in  → Cricket match (+6h)            ║');
-    console.log('║   player2@athleon.in  → Badminton (tomorrow)           ║');
-    console.log('║   player3@athleon.in  → Football (LIVE now)            ║');
-    console.log('║   player4@athleon.in  → Basketball (+2h)               ║');
-    console.log('║   player5@athleon.in  → Tennis (+2h)                   ║');
-    console.log('║   player6@athleon.in  → Volleyball (+4h)               ║');
-    console.log('║   player7@athleon.in  → Football (+4h)                 ║');
-    console.log('║   player8@athleon.in  → Badminton (+6h)                ║');
     console.log('╚════════════════════════════════════════════════════════╝\n');
 
     await mongoose.disconnect();

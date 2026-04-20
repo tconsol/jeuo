@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { revenueService } from '../../services';
-import { StatsCard } from '../../components';
+import { StatsCard, CustomSelect } from '../../components';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+
+const RANGE_OPTIONS = [
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+];
 
 function formatCurrency(n) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -25,11 +31,7 @@ export default function EarningsReport() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Earnings</h1>
-        <select value={range} onChange={(e) => setRange(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg">
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="90d">Last 90 days</option>
-        </select>
+        <CustomSelect options={RANGE_OPTIONS} value={range} onChange={setRange} className="w-40" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

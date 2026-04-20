@@ -64,11 +64,14 @@ class CricketScoring {
     const innings = state.currentInningsData;
     const payload = event.payload;
 
-    if (innings.isComplete) {
+    // players_set is allowed even after innings complete (e.g. 2nd innings setup)
+    if (innings.isComplete && event.type !== 'players_set') {
       throw new Error('Innings is already complete');
     }
 
     switch (event.type) {
+      case 'players_set':
+        return this._processPlayersSet(state, event);
       case 'delivery':
         return this._processDelivery(state, event);
       case 'wicket':
@@ -85,7 +88,22 @@ class CricketScoring {
   }
 
   static _processDelivery(state, event) {
-    const innings = { ...state.currentInningsData };
+    const innings = {
+      ...state.currentInningsData,
+      batsmen: { ...state.currentInningsData.batsmen },
+      extras: { ...state.currentInningsData.extras },
+      currentOver: [...(state.currentInningsData.currentOver || [])],
+    };
+    // Deep clone batting/bowling cards
+    innings.battingCard = {};
+    for (const [k, v] of Object.entries(state.currentInningsData.battingCard || {})) {
+      innings.battingCard[k] = { ...v };
+    }
+    innings.bowlingCard = {};
+    for (const [k, v] of Object.entries(state.currentInningsData.bowlingCard || {})) {
+      innings.bowlingCard[k] = { ...v };
+    }
+
     const p = event.payload;
     const isExtra = p.isExtra || false;
     const extraType = p.extraType;
@@ -96,13 +114,15 @@ class CricketScoring {
     let isLegalDelivery = true;
 
     // Initialize batting card for striker
-    const strikerId = innings.batsmen.striker;
+    // Use payload.striker as fallback (seed data or legacy events)
+    const strikerId = innings.batsmen.striker || (event.player?.toString?.() || event.player);
     if (strikerId && !innings.battingCard[strikerId]) {
       innings.battingCard[strikerId] = { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
     }
 
     // Initialize bowling card for bowler
-    const bowlerId = innings.currentBowler;
+    // Use payload.bowler as fallback (seed data or legacy events where currentBowler not set)
+    const bowlerId = innings.currentBowler || (p.bowler ? p.bowler.toString() : null);
     if (bowlerId && !innings.bowlingCard[bowlerId]) {
       innings.bowlingCard[bowlerId] = { overs: 0, maidens: 0, runs: 0, wickets: 0, economy: 0, balls: 0, wides: 0, noBalls: 0 };
     }
@@ -217,7 +237,23 @@ class CricketScoring {
   }
 
   static _processWicket(state, event) {
-    const innings = { ...state.currentInningsData };
+    const innings = {
+      ...state.currentInningsData,
+      batsmen: { ...state.currentInningsData.batsmen },
+      extras: { ...state.currentInningsData.extras },
+      fow: [...(state.currentInningsData.fow || [])],
+      currentOver: [...(state.currentInningsData.currentOver || [])],
+    };
+    // Deep clone batting/bowling cards
+    innings.battingCard = {};
+    for (const [k, v] of Object.entries(state.currentInningsData.battingCard || {})) {
+      innings.battingCard[k] = { ...v };
+    }
+    innings.bowlingCard = {};
+    for (const [k, v] of Object.entries(state.currentInningsData.bowlingCard || {})) {
+      innings.bowlingCard[k] = { ...v };
+    }
+
     const p = event.payload;
 
     // A wicket is essentially a delivery that also dismisses a batter
@@ -299,7 +335,17 @@ class CricketScoring {
   }
 
   static _processEndOver(state, event) {
-    const innings = { ...state.currentInningsData };
+    const innings = {
+      ...state.currentInningsData,
+      batsmen: { ...state.currentInningsData.batsmen },
+      overHistory: [...(state.currentInningsData.overHistory || [])],
+      currentOver: [...(state.currentInningsData.currentOver || [])],
+    };
+    // Deep clone bowling cards (modified in _completeOver)
+    innings.bowlingCard = {};
+    for (const [k, v] of Object.entries(state.currentInningsData.bowlingCard || {})) {
+      innings.bowlingCard[k] = { ...v };
+    }
     this._completeOver(innings);
     return { ...state, currentInningsData: innings };
   }
@@ -378,6 +424,24 @@ class CricketScoring {
     const runs = event.payload.runs || 5;
     innings.runs += runs;
     innings.extras.penalties += runs;
+    return { ...state, currentInningsData: innings };
+  }
+
+  static _processPlayersSet(state, event) {
+    // Deep clone batsmen to avoid mutation
+    const innings = {
+      ...state.currentInningsData,
+      batsmen: { ...state.currentInningsData.batsmen },
+      battingCard: { ...state.currentInningsData.battingCard },
+      bowlingCard: { ...state.currentInningsData.bowlingCard },
+    };
+    const p = event.payload || {};
+    if (p.battingTeam) innings.battingTeam = p.battingTeam;
+    if (p.bowlingTeam) innings.bowlingTeam = p.bowlingTeam;
+    // Convert ObjectIds to strings for consistent dictionary keys
+    if (p.striker) innings.batsmen.striker = p.striker.toString();
+    if (p.nonStriker) innings.batsmen.nonStriker = p.nonStriker.toString();
+    if (p.bowler) innings.currentBowler = p.bowler.toString();
     return { ...state, currentInningsData: innings };
   }
 

@@ -22,7 +22,7 @@ export default function TeamDetail() {
 
   const { data: team, isLoading, error } = useQuery({
     queryKey: ['team', id],
-    queryFn: () => teamService.getById(id).then(r => r.data.data),
+    queryFn: () => teamService.getById(id).then(r => r.data?.data?.team || r.data?.data),
   });
 
   const addPlayerMutation = useMutation({
@@ -45,7 +45,7 @@ export default function TeamDetail() {
     setSearching(true);
     try {
       const { data } = await teamService.searchPlayers({ q: searchQuery });
-      setSearchResults(data.data || []);
+      setSearchResults(data?.data?.players || data?.data || []);
     } catch {
       setSearchResults([]);
     } finally {
@@ -80,7 +80,7 @@ export default function TeamDetail() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto pt-4 pb-28 px-4 space-y-4">
+      className="max-w-4xl mx-auto pt-4 pb-28 px-4 space-y-4">
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">

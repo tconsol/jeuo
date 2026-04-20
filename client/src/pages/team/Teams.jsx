@@ -4,9 +4,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SportIcon } from '../../utils/sportIcons';
 import { FiX, FiUsers } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { CustomSelect } from '../../components/common';
 import { teamService } from '../../services';
 
-// sport icons via SportIcon component
+const SPORT_OPTIONS = [
+  { value: 'cricket',      label: 'Cricket',      icon: <SportIcon sport="cricket" size={16} /> },
+  { value: 'football',     label: 'Football',     icon: <SportIcon sport="football" size={16} /> },
+  { value: 'basketball',   label: 'Basketball',   icon: <SportIcon sport="basketball" size={16} /> },
+  { value: 'tennis',       label: 'Tennis',       icon: <SportIcon sport="tennis" size={16} /> },
+  { value: 'badminton',    label: 'Badminton',    icon: <SportIcon sport="badminton" size={16} /> },
+  { value: 'table_tennis', label: 'Table Tennis', icon: <SportIcon sport="table_tennis" size={16} /> },
+  { value: 'volleyball',   label: 'Volleyball',   icon: <SportIcon sport="volleyball" size={16} /> },
+];
 
 export default function Teams() {
   const navigate = useNavigate();
@@ -16,7 +25,7 @@ export default function Teams() {
 
   const { data: teams, isLoading } = useQuery({
     queryKey: ['my-teams'],
-    queryFn: () => teamService.getMyTeams().then(r => r.data.data),
+    queryFn: () => teamService.getMyTeams().then(r => r.data?.data?.teams || r.data?.data || []),
   });
 
   const createMutation = useMutation({
@@ -31,7 +40,7 @@ export default function Teams() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto pt-4 pb-28 px-4 space-y-4">
+      className="max-w-4xl mx-auto pt-4 pb-28 px-4 space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -73,16 +82,13 @@ export default function Teams() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Sport</label>
-              <select
+              <CustomSelect
+                label="Sport"
                 value={form.sport}
-                onChange={e => setForm({ ...form, sport: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
-              >
-                {Object.entries(SPORT_ICONS).map(([sport, icon]) => (
-                  <option key={sport} value={sport}>{icon} {sport.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
-                ))}
-              </select>
+                onChange={v => setForm({ ...form, sport: v })}
+                options={SPORT_OPTIONS}
+                placeholder="Select a sport"
+              />
             </div>
           </div>
           <button

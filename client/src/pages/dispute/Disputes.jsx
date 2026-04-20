@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '../../components/common';
 import { disputeService } from '../../services';
 
 const STATUS_COLORS = {
@@ -12,6 +13,8 @@ const STATUS_COLORS = {
 };
 
 const TYPES = ['score_dispute', 'player_conduct', 'rule_violation', 'technical_issue', 'other'];
+
+const TYPE_OPTIONS = TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }));
 
 export default function Disputes() {
   const [showForm, setShowForm] = useState(false);
@@ -35,7 +38,7 @@ export default function Disputes() {
   const disputes = data?.data?.data?.disputes || data?.data?.disputes || [];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Disputes</h1>
         <button
@@ -47,34 +50,32 @@ export default function Disputes() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl border p-6 mb-6 space-y-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6 space-y-4">
           <input
             placeholder="Match ID"
             value={form.matchId}
             onChange={(e) => setForm({ ...form, matchId: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition"
           />
-          <select
+          <CustomSelect
+            label="Dispute Type"
             value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-          >
-            {TYPES.map((t) => (
-              <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
+            onChange={(v) => setForm({ ...form, type: v })}
+            options={TYPE_OPTIONS}
+            placeholder="Select type"
+          />
           <input
             placeholder="Title"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition"
           />
           <textarea
             placeholder="Describe the issue..."
             rows={3}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition"
           />
           <button
             disabled={!form.matchId || !form.title || createMutation.isPending}

@@ -60,6 +60,13 @@ const eventSchema = new mongoose.Schema({
     overNumber: Number,
     ballInOver: Number,
     strikerSwap: Boolean,   // did batsmen swap ends
+    shotArea: String,       // shot direction on ground
+
+    // ---- CRICKET: players_set event fields ----
+    battingTeam: { type: String, enum: ['home', 'away'] },
+    bowlingTeam: { type: String, enum: ['home', 'away'] },
+    striker: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    nonStriker: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     // ---- FOOTBALL ----
     minute: Number,

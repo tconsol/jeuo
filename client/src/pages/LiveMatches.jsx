@@ -20,13 +20,13 @@ export default function LiveMatches() {
     queryKey: ['matches', 'live'],
     queryFn: async () => {
       const { data } = await api.get('/matches/live');
-      return data.matches;
+      return data.data?.matches || data.matches || [];
     },
-    refetchInterval: 15000, // auto-refresh every 15s
+    refetchInterval: 5000, // auto-refresh every 5s
   });
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

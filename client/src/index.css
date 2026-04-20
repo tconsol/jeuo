@@ -9,6 +9,10 @@
   body {
     @apply bg-gray-50 text-gray-900 font-sans antialiased;
   }
+  input, textarea, select {
+    @apply text-gray-900;
+    color-scheme: light;
+  }
   ::-webkit-scrollbar {
     @apply w-1.5;
   }

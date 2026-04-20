@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { bookingService } from '../../services';
-import { DataTable, StatusBadge } from '../../components';
+import { DataTable, StatusBadge, CustomSelect } from '../../components';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function BookingManagement() {
   const qc = useQueryClient();
@@ -39,12 +46,7 @@ export default function BookingManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Bookings</h1>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg">
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <CustomSelect options={STATUS_OPTIONS} value={filter} onChange={setFilter} className="w-40" />
       </div>
       {isLoading ? <div className="animate-pulse h-60 bg-gray-100 rounded-xl" /> : <DataTable columns={columns} data={bookings} />}
     </div>

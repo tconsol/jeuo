@@ -7,8 +7,7 @@ class ActivityService {
     const activity = new Activity({
       ...data,
       creator: creatorId,
-      players: [{ user: creatorId, status: 'approved' }],
-      currentPlayers: 1,
+      players: [{ user: creatorId, status: 'confirmed' }],
     });
     await activity.save();
     logger.info({ activityId: activity._id, creatorId }, 'Activity created');
@@ -52,16 +51,16 @@ class ActivityService {
     const existing = activity.players.find(p => p.user.toString() === userId.toString());
     if (existing) throw new Error('Already in this activity');
 
-    if (activity.currentPlayers >= activity.maxPlayers) {
+    const confirmedCount = activity.players.filter(p => p.status === 'confirmed').length;
+    if (confirmedCount >= activity.maxPlayers) {
       // Add to waitlist
       activity.players.push({ user: userId, status: 'waitlisted' });
       await activity.save();
       return { status: 'waitlisted' };
     }
 
-    const status = activity.isPublic ? 'approved' : 'pending';
+    const status = activity.visibility === 'public' ? 'confirmed' : 'pending';
     activity.players.push({ user: userId, status });
-    if (status === 'approved') activity.currentPlayers += 1;
     await activity.save();
 
     // Notify creator
@@ -85,8 +84,7 @@ class ActivityService {
     if (!player) throw new Error('Player not found in activity');
     if (player.status !== 'pending') throw new Error('Player is not pending approval');
 
-    player.status = 'approved';
-    activity.currentPlayers += 1;
+    player.status = 'confirmed';
     await activity.save();
 
     const queue = getQueue('notification');
@@ -108,15 +106,13 @@ class ActivityService {
     const idx = activity.players.findIndex(p => p.user.toString() === playerId);
     if (idx === -1) throw new Error('Player not found');
 
-    const wasApproved = activity.players[idx].status === 'approved';
     activity.players.splice(idx, 1);
-    if (wasApproved) activity.currentPlayers -= 1;
 
     // Promote from waitlist
+    const confirmedNow = activity.players.filter(p => p.status === 'confirmed').length;
     const waitlisted = activity.players.find(p => p.status === 'waitlisted');
-    if (waitlisted && activity.currentPlayers < activity.maxPlayers) {
-      waitlisted.status = 'approved';
-      activity.currentPlayers += 1;
+    if (waitlisted && confirmedNow < activity.maxPlayers) {
+      waitlisted.status = 'confirmed';
     }
 
     await activity.save();
@@ -128,7 +124,7 @@ class ActivityService {
       .populate('players.user', 'name');
     if (!activity) throw new Error('Activity not found or not authorized');
 
-    const approvedPlayers = activity.players.filter(p => p.status === 'approved');
+    const approvedPlayers = activity.players.filter(p => p.status === 'confirmed');
 
     const match = new Match({
       activity: activity._id,

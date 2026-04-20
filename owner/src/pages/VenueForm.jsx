@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
+import CustomSelect from '../components/CustomSelect';
 
 const SPORTS = ['cricket', 'football', 'basketball', 'tennis', 'badminton', 'table_tennis', 'volleyball'];
+const SPORT_OPTIONS = SPORTS.map((s) => ({ value: s, label: s.replace('_', ' ') }));
 const AMENITIES = ['parking', 'changing_rooms', 'showers', 'drinking_water', 'floodlights', 'first_aid', 'cafeteria', 'wifi'];
 
 export default function VenueForm() {
@@ -163,10 +165,11 @@ export default function VenueForm() {
               <div className="grid grid-cols-3 gap-3">
                 <input value={court.name} onChange={(e) => updateCourt(idx, 'name', e.target.value)}
                   placeholder="Name" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
-                <select value={court.sport} onChange={(e) => updateCourt(idx, 'sport', e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm capitalize focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition">
-                  {SPORTS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                </select>
+                <CustomSelect
+                  options={SPORT_OPTIONS}
+                  value={court.sport}
+                  onChange={(v) => updateCourt(idx, 'sport', v)}
+                />
                 <input type="number" value={court.pricePerSlot} onChange={(e) => updateCourt(idx, 'pricePerSlot', Number(e.target.value))}
                   placeholder="₹ per slot" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" min={0} />
               </div>
