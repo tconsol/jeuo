@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiAward } from 'react-icons/fi';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -114,7 +115,7 @@ export default function Onboarding() {
 
         {step === 3 && (
           <div className="text-center">
-            <div className="text-5xl mb-4">🎉</div>
+            <div className="text-5xl mb-4"><FiAward size={20} className="inline" /></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">All Set!</h2>
             <p className="text-gray-500 mb-6">
               You selected {selectedSports.length} sport{selectedSports.length > 1 ? 's' : ''} at{' '}

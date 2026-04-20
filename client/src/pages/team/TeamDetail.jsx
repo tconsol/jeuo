@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { SportIcon } from '../../utils/sportIcons';
+import { FiAlertTriangle, FiSearch, FiX } from 'react-icons/fi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teamService } from '../../services';
 import api from '../../lib/api';
 
-const SPORT_ICONS = {
-  cricket: '🏏', football: '⚽', basketball: '🏀', badminton: '🏸',
-  tennis: '🎾', volleyball: '🏐', table_tennis: '🏓',
-};
+// sport icons via SportIcon component
 
 export default function TeamDetail() {
   const { id } = useParams();
@@ -68,14 +67,16 @@ export default function TeamDetail() {
   if (error || !team) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-3xl">⚠️</div>
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+          <FiAlertTriangle size={28} className="text-red-500" />
+        </div>
         <p className="text-red-600 font-medium">Team not found</p>
         <button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm">← Go Back</button>
       </div>
     );
   }
 
-  const icon = SPORT_ICONS[team.sport] || '🏆';
+  const teamSportIcon = <SportIcon sport={team.sport} size={40} />;
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -89,7 +90,7 @@ export default function TeamDetail() {
           {team.shortName && <span className="bg-white/15 text-white text-xs font-mono px-3 py-1 rounded-full">{team.shortName}</span>}
         </div>
         <div className="relative z-10 text-center">
-          <div className="text-5xl mb-2">{icon}</div>
+          <div className="flex justify-center mb-2">{teamSportIcon}</div>
           <h1 className="text-2xl font-black">{team.name}</h1>
           <p className="text-white/60 text-sm mt-1 capitalize">{team.sport?.replace('_', ' ')}</p>
         </div>
@@ -122,7 +123,7 @@ export default function TeamDetail() {
           {isOwner && (
             <button onClick={() => setShowAddPlayer(!showAddPlayer)}
               className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition">
-              {showAddPlayer ? '✕ Cancel' : '+ Add Player'}
+              {showAddPlayer ? <><FiX size={12} className="inline mr-1" />Cancel</> : '+ Add Player'}
             </button>
           )}
         </div>
@@ -141,7 +142,7 @@ export default function TeamDetail() {
                 />
                 <button onClick={handleSearch} disabled={searching}
                   className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold transition hover:bg-indigo-700 disabled:opacity-50">
-                  {searching ? '…' : '🔍'}
+                  {searching ? '…' : <FiSearch size={14} />}
                 </button>
               </div>
               {searchResults.length > 0 && (
@@ -207,7 +208,7 @@ export default function TeamDetail() {
                 )}
                 {isOwner && playerId !== user?._id && (
                   <button onClick={() => removePlayerMutation.mutate(playerId)}
-                    className="text-xs text-red-400 hover:text-red-600 transition px-2 py-1">✕</button>
+                    className="text-xs text-red-400 hover:text-red-600 transition px-2 py-1"><FiX size={12} /></button>
                 )}
               </div>
             );

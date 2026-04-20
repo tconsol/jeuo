@@ -1,21 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { SportIcon } from '../utils/sportIcons';
 import api from '../lib/api';
 import { FiUsers, FiCalendar, FiMapPin, FiPlus, FiDollarSign } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 const SPORTS = [
-  { id: 'all', label: 'All', emoji: '🏅' },
-  { id: 'cricket', label: 'Cricket', emoji: '🏏' },
-  { id: 'football', label: 'Football', emoji: '⚽' },
-  { id: 'basketball', label: 'Basketball', emoji: '🏀' },
-  { id: 'tennis', label: 'Tennis', emoji: '🎾' },
-  { id: 'badminton', label: 'Badminton', emoji: '🏸' },
-  { id: 'volleyball', label: 'Volleyball', emoji: '🏐' },
+  { id: 'all',        label: 'All' },
+  { id: 'cricket',    label: 'Cricket' },
+  { id: 'football',   label: 'Football' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'tennis',     label: 'Tennis' },
+  { id: 'badminton',  label: 'Badminton' },
+  { id: 'volleyball', label: 'Volleyball' },
 ];
 
-const SPORT_EMOJI = { cricket: '🏏', football: '⚽', basketball: '🏀', tennis: '🎾', badminton: '🏸', volleyball: '🏐', default: '🏓' };
+// sport icons handled by SportIcon component
 
 export default function Activities() {
   const [sport, setSport] = useState('all');
@@ -55,7 +56,7 @@ export default function Activities() {
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
             }`}
           >
-            <span>{s.emoji}</span> {s.label}
+            {s.id !== 'all' && <SportIcon sport={s.id} size={16} className={sport === s.id ? 'text-white' : 'text-gray-500'} />} {s.label}
           </button>
         ))}
       </div>
@@ -85,8 +86,8 @@ export default function Activities() {
               >
                 <Link to={`/activities/${activity._id}`} className="flex gap-4 bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover border border-gray-100 transition-all duration-300 group">
                   {/* Sport icon */}
-                  <div className="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ring-1 ring-primary-100">
-                    {SPORT_EMOJI[activity.sport] || SPORT_EMOJI.default}
+                  <div className="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center flex-shrink-0 ring-1 ring-primary-100">
+                    <SportIcon sport={activity.sport} size={26} className="text-primary-600" />
                   </div>
 
                   <div className="flex-1 min-w-0">

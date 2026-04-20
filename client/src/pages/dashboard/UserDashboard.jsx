@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { SportIcon } from '../../utils/sportIcons';
 import { useSelector } from 'react-redux';
 import { userService } from '../../services';
 
@@ -55,7 +56,7 @@ const STAT_CONFIG = [
   },
 ];
 
-const SPORT_ICONS = { cricket: '🏏', football: '⚽', basketball: '🏀', tennis: '🎾', badminton: '🏸', volleyball: '🏐', default: '🏓' };
+// sport icons via SportIcon component
 
 const QUICK_LINKS = [
   { to: '/venues', label: 'Book a Venue', desc: 'Find and reserve courts', color: 'bg-primary-50 text-primary-600', icon: (
@@ -89,7 +90,7 @@ export default function UserDashboard() {
         <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full" />
         <div className="relative z-10">
           <p className="text-primary-200 text-sm font-medium">Welcome back,</p>
-          <h1 className="text-2xl font-bold mt-0.5">{user?.name?.split(' ')[0] || 'Player'} 👋</h1>
+          <h1 className="text-2xl font-bold mt-0.5">{user?.name?.split(' ')[0] || 'Player'} </h1>
           {stats && (
             <div className="flex items-center gap-2 mt-3">
               <div className="flex items-center gap-1.5 bg-white/15 rounded-lg px-3 py-1.5 text-sm">

@@ -1,3 +1,4 @@
+import { GiCricketBat } from 'react-icons/gi';
 import { motion } from 'framer-motion';
 
 export default function CricketScoreboard({ score }) {
@@ -94,7 +95,7 @@ export default function CricketScoreboard({ score }) {
       {battingTeam?.batters && Object.values(battingTeam.batters).some((b) => !b.out) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">🏏 Batting</span>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest"><GiCricketBat size={16} className="inline mr-1" /> Batting</span>
             <span className="text-xs text-gray-400">R (B) 4s 6s SR</span>
           </div>
           <div className="divide-y divide-gray-50">
@@ -127,7 +128,7 @@ export default function CricketScoreboard({ score }) {
       {battingTeam?.bowlers && Object.values(battingTeam.bowlers).some((b) => b.isCurrentBowler) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">🎳 Bowling</span>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest"><GiCricketBat size={14} className="inline mr-1 text-red-500" /> Bowling</span>
           </div>
           {Object.entries(battingTeam.bowlers)
             .filter(([, s]) => s.isCurrentBowler)

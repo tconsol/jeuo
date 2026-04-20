@@ -1,4 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { SportIcon } from '../../utils/sportIcons';
+import { FiAlertTriangle, FiAward, FiList, FiGrid, FiBarChart2, FiUsers, FiMapPin, FiDollarSign, FiCheck } from 'react-icons/fi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,10 +9,7 @@ import { FixturesBracket, PointsTable } from '../../components/tournament';
 import { LoadingSpinner } from '../../components/common';
 import { useState } from 'react';
 
-const SPORT_ICONS = {
-  cricket: '🏏', football: '⚽', basketball: '🏀', badminton: '🏸',
-  tennis: '🎾', volleyball: '🏐', table_tennis: '🏓', swimming: '🏊',
-};
+// sport icons via SportIcon component
 
 const STATUS_STYLES = {
   upcoming:    { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200', label: 'Upcoming' },
@@ -72,14 +71,16 @@ export default function TournamentDetail() {
   if (error || !tournament) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-3xl">⚠️</div>
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+          <FiAlertTriangle size={28} className="text-red-500" />
+        </div>
         <p className="text-red-600 font-medium">{error?.response?.data?.message || 'Tournament not found'}</p>
         <button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm font-medium">← Go Back</button>
       </div>
     );
   }
 
-  const icon = SPORT_ICONS[tournament.sport?.toLowerCase()] || '🏆';
+  const sportIcon = <SportIcon sport={tournament.sport?.toLowerCase()} size={22} />;
   const status = STATUS_STYLES[tournament.status] || STATUS_STYLES.upcoming;
   const teams = tournament.teams || tournament.participants || [];
   const isRegistered = teams.some(t =>
@@ -91,10 +92,10 @@ export default function TournamentDetail() {
   const spotsLeft = maxTeams - teams.length;
 
   const TABS = [
-    { id: 'overview', label: 'Overview', icon: '📋' },
-    { id: 'fixtures', label: 'Fixtures', icon: '🏟️' },
-    { id: 'standings', label: 'Standings', icon: '📊' },
-    { id: 'teams', label: 'Teams', icon: '👥' },
+    { id: 'overview',  label: 'Overview',  icon: FiList },
+    { id: 'fixtures',  label: 'Fixtures',  icon: FiGrid },
+    { id: 'standings', label: 'Standings', icon: FiBarChart2 },
+    { id: 'teams',     label: 'Teams',     icon: FiUsers },
   ];
 
   return (
@@ -153,7 +154,7 @@ export default function TournamentDetail() {
             </div>
             {isRegistered ? (
               <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold ring-1 ring-emerald-100">
-                ✓ Registered
+                <FiCheck size={12} className="inline mr-1" /> Registered
               </span>
             ) : spotsLeft > 0 || !maxTeams ? (
               <button
@@ -169,7 +170,7 @@ export default function TournamentDetail() {
           </div>
           {tournament.entryFee > 0 && (
             <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-amber-50 rounded-xl px-4 py-2 border border-amber-100">
-              <span>💰</span> Entry fee: <span className="font-bold text-amber-700">₹{tournament.entryFee}</span>
+              <FiDollarSign size={14} className="text-amber-600" /> Entry fee: <span className="font-bold text-amber-700">₹{tournament.entryFee}</span>
             </div>
           )}
         </div>
@@ -182,7 +183,7 @@ export default function TournamentDetail() {
             className={`flex-1 py-3 text-xs font-semibold transition-all ${
               tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'
             }`}>
-            <span className="mr-1">{t.icon}</span> {t.label}
+            <span className="mr-1">{(() => { const Icon = t.icon; return <Icon size={12} className="inline" />; })()}</span> {t.label}
           </button>
         ))}
       </div>
@@ -197,7 +198,7 @@ export default function TournamentDetail() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-gray-400 text-xs">Sport</p>
-                  <p className="font-semibold text-gray-800 capitalize mt-0.5">{icon} {tournament.sport?.replace('_', ' ')}</p>
+                  <p className="font-semibold text-gray-800 capitalize mt-0.5 flex items-center gap-1">{sportIcon} {tournament.sport?.replace('_', ' ')}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-gray-400 text-xs">Format</p>
@@ -206,7 +207,7 @@ export default function TournamentDetail() {
                 {tournament.venue?.name && (
                   <div className="bg-gray-50 rounded-xl p-3 col-span-2">
                     <p className="text-gray-400 text-xs">Venue</p>
-                    <p className="font-semibold text-gray-800 mt-0.5">📍 {tournament.venue.name}</p>
+                    <p className="font-semibold text-gray-800 mt-0.5 flex items-center gap-1"><FiMapPin size={12} /> {tournament.venue.name}</p>
                   </div>
                 )}
                 {tournament.rules && (
@@ -266,7 +267,7 @@ export default function TournamentDetail() {
                 <FixturesBracket fixtures={fixtures} />
               ) : (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-3">🏟️</div>
+                <div className="flex justify-center mb-3"><FiGrid size={36} className="text-gray-300" /></div>
                   <h4 className="font-bold text-gray-800">No Fixtures Yet</h4>
                   <p className="text-sm text-gray-500 mt-1">
                     {['upcoming', 'registration'].includes(tournament.status)
@@ -286,7 +287,7 @@ export default function TournamentDetail() {
                 <PointsTable standings={standings} />
               ) : (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-3">📊</div>
+                <div className="flex justify-center mb-3"><FiBarChart2 size={36} className="text-gray-300" /></div>
                   <h4 className="font-bold text-gray-800">No Standings Yet</h4>
                   <p className="text-sm text-gray-500 mt-1">
                     Standings will be available once matches have been played.
@@ -322,7 +323,7 @@ export default function TournamentDetail() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-3">👥</div>
+                <div className="flex justify-center mb-3"><FiUsers size={36} className="text-gray-300" /></div>
                   <h4 className="font-bold text-gray-800">No Teams Registered</h4>
                   <p className="text-sm text-gray-500 mt-1">Be the first to register for this tournament!</p>
                 </div>

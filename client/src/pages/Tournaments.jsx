@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { SportIcon } from '../utils/sportIcons';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FiCalendar, FiUsers, FiAward, FiClock, FiMapPin, FiChevronRight } from 'react-icons/fi';
 import api from '../lib/api';
 
 const SPORTS_OPTIONS = [
-  { value: 'all', label: 'All Sports', emoji: '🏆' },
-  { value: 'cricket', label: 'Cricket', emoji: '🏏' },
-  { value: 'football', label: 'Football', emoji: '⚽' },
-  { value: 'basketball', label: 'Basketball', emoji: '🏀' },
-  { value: 'tennis', label: 'Tennis', emoji: '🎾' },
-  { value: 'badminton', label: 'Badminton', emoji: '🏸' },
-  { value: 'volleyball', label: 'Volleyball', emoji: '🏐' },
+  { value: 'all', label: 'All Sports' },
+  { value: 'cricket', label: 'Cricket' },
+  { value: 'football', label: 'Football' },
+  { value: 'basketball', label: 'Basketball' },
+  { value: 'tennis', label: 'Tennis' },
+  { value: 'badminton', label: 'Badminton' },
+  { value: 'volleyball', label: 'Volleyball' },
 ];
 
 const STATUS_OPTIONS = [
@@ -83,14 +84,14 @@ export default function Tournaments() {
 
       {/* Sport filter */}
       <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
-        {SPORTS_OPTIONS.map(({ value, label, emoji }) => (
+        {SPORTS_OPTIONS.map(({ value, label }) => (
           <button key={value} onClick={() => handleFilter('sport', value)}
             className={`flex items-center gap-2 flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
               sport === value
                 ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
             }`}>
-            <span>{emoji}</span> {label}
+            {value !== 'all' && <SportIcon sport={value} size={14} />} {label}
           </button>
         ))}
       </div>
@@ -151,7 +152,7 @@ export default function Tournaments() {
 
                   {/* Gradient header */}
                   <div className={`bg-gradient-to-br ${gradient} p-5 relative overflow-hidden`}>
-                    <div className="absolute top-0 right-0 opacity-10 text-8xl font-bold leading-none -mt-4 -mr-4">{sportOption?.emoji}</div>
+                    <div className="absolute top-0 right-0 opacity-10 leading-none -mt-4 -mr-4"><SportIcon sport={t.sport} size={80} /></div>
                     <div className="relative">
                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text} mb-3`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />

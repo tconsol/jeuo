@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
-import { sportIcon, formatDate, formatTime } from '../../utils';
+import { SportIcon } from '../../utils/sportIcons';
+import { formatDate, formatTime } from '../../utils';
 
 export default function ActivityCard({ activity }) {
   const spotsLeft = activity.maxPlayers - (activity.players?.length || 0);
@@ -10,7 +11,7 @@ export default function ActivityCard({ activity }) {
     <Link to={`/activities/${activity._id}`} className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{sportIcon(activity.sport)}</span>
+          <span className="flex items-center justify-center"><SportIcon sport={activity.sport} size={22} className="text-primary-600" /></span>
           <div>
             <h3 className="font-semibold text-gray-900">{activity.title}</h3>
             <p className="text-xs text-gray-500">{activity.venue?.name}</p>

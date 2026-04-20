@@ -1,3 +1,5 @@
+import { FiAlertTriangle, FiSquare, FiBarChart2 } from 'react-icons/fi';
+import { GiSoccerBall } from 'react-icons/gi';
 import { motion } from 'framer-motion';
 
 export default function FootballScoreboard({ score }) {
@@ -48,12 +50,12 @@ export default function FootballScoreboard({ score }) {
           (score.home?.redCards > 0) || (score.away?.redCards > 0)) && (
           <div className="flex justify-between mt-4 px-2 text-xs">
             <span className="text-emerald-300">
-              {score.home?.yellowCards > 0 && <span className="mr-1">🟨×{score.home.yellowCards}</span>}
-              {score.home?.redCards > 0 && <span>🟥×{score.home.redCards}</span>}
+              {score.home?.yellowCards > 0 && <span className="mr-1"><FiAlertTriangle size={12} className="inline text-yellow-600 mr-0.5" />×{score.home.yellowCards}</span>}
+              {score.home?.redCards > 0 && <span><FiSquare size={12} className="inline text-red-600 mr-0.5" />×{score.home.redCards}</span>}
             </span>
             <span className="text-emerald-300">
-              {score.away?.yellowCards > 0 && <span className="mr-1">🟨×{score.away.yellowCards}</span>}
-              {score.away?.redCards > 0 && <span>🟥×{score.away.redCards}</span>}
+              {score.away?.yellowCards > 0 && <span className="mr-1"><FiAlertTriangle size={12} className="inline text-yellow-600 mr-0.5" />×{score.away.yellowCards}</span>}
+              {score.away?.redCards > 0 && <span><FiSquare size={12} className="inline text-red-600 mr-0.5" />×{score.away.redCards}</span>}
             </span>
           </div>
         )}
@@ -62,7 +64,7 @@ export default function FootballScoreboard({ score }) {
       {/* ── Stats comparison ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">📊 Match Stats</span>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest"><FiBarChart2 size={12} className="inline mr-1" />Match Stats</span>
         </div>
         <div className="px-5 py-2 divide-y divide-gray-50">
           {[
@@ -94,13 +96,13 @@ export default function FootballScoreboard({ score }) {
       {(score.home?.goalScorers?.length > 0 || score.away?.goalScorers?.length > 0) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">⚽ Goals</span>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest"><GiSoccerBall size={12} className="inline mr-1" />Goals</span>
           </div>
           <div className="grid grid-cols-2 divide-x divide-gray-50 px-5 py-3 gap-4">
             <div className="space-y-1">
               {score.home?.goalScorers?.map((g, i) => (
                 <p key={i} className="text-sm text-gray-700">
-                  ⚽ {g.player}
+                  {g.player}
                   <span className="text-gray-400 text-xs ml-1">{g.minute}'</span>
                   {g.type === 'penalty' && <span className="text-gray-400 text-xs"> (P)</span>}
                   {g.type === 'own_goal' && <span className="text-red-400 text-xs"> (OG)</span>}
@@ -111,7 +113,7 @@ export default function FootballScoreboard({ score }) {
               {score.away?.goalScorers?.map((g, i) => (
                 <p key={i} className="text-sm text-gray-700">
                   <span className="text-gray-400 text-xs mr-1">{g.minute}'</span>
-                  {g.player} ⚽
+                  {g.player}
                   {g.type === 'penalty' && <span className="text-gray-400 text-xs"> (P)</span>}
                 </p>
               ))}

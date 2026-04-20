@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { SportIcon } from '../../utils/sportIcons';
+import { FiX, FiUsers } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { teamService } from '../../services';
 
-const SPORT_ICONS = {
-  cricket: '🏏', football: '⚽', basketball: '🏀', badminton: '🏸',
-  tennis: '🎾', volleyball: '🏐', table_tennis: '🏓',
-};
+// sport icons via SportIcon component
 
 export default function Teams() {
   const navigate = useNavigate();
@@ -44,7 +43,7 @@ export default function Teams() {
           onClick={() => setShowCreate(!showCreate)}
           className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition active:scale-95"
         >
-          {showCreate ? '✕ Cancel' : '+ New Team'}
+          {showCreate ? <><FiX size={12} className="inline mr-1" />Cancel</> : '+ New Team'}
         </button>
       </div>
 
@@ -114,7 +113,7 @@ export default function Teams() {
               className="block bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-xl">
-                  {SPORT_ICONS[team.sport] || '🏆'}
+                  <SportIcon sport={team.sport} size={24} className="text-indigo-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -133,7 +132,7 @@ export default function Teams() {
         </div>
       ) : !isLoading && (
         <div className="text-center py-16">
-          <div className="text-5xl mb-4">👥</div>
+          <div className="flex justify-center mb-4"><FiUsers size={52} className="text-gray-300" /></div>
           <h3 className="text-lg font-bold text-gray-800">No Teams Yet</h3>
           <p className="text-sm text-gray-500 mt-1">Create your first team to get started</p>
         </div>

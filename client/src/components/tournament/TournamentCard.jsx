@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
-import { sportIcon, formatDate } from '../../utils';
+import { SportIcon } from '../../utils/sportIcons';
+import { formatDate } from '../../utils';
 
 export default function TournamentCard({ tournament }) {
   const statusColors = {
@@ -11,7 +12,7 @@ export default function TournamentCard({ tournament }) {
     <Link to={`/tournaments/${tournament._id}`} className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{sportIcon(tournament.sport)}</span>
+          <span className="flex items-center justify-center"><SportIcon sport={tournament.sport} size={22} className="text-primary-600" /></span>
           <h3 className="font-semibold text-gray-900">{tournament.name}</h3>
         </div>
         <Badge variant={statusColors[tournament.status] || 'default'}>{tournament.status}</Badge>

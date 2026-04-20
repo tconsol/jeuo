@@ -1,13 +1,9 @@
-﻿import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import api from '../lib/api';
-import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiUsers, FiDollarSign } from 'react-icons/fi';
-
-const SPORT_EMOJI = {
-  cricket: 'ðŸ', football: 'âš½', basketball: 'ðŸ€', badminton: 'ðŸ¸',
-  tennis: 'ðŸŽ¾', volleyball: 'ðŸ', table_tennis: 'ðŸ“', swimming: 'ðŸŠ',
-};
+import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiUsers, FiDollarSign, FiCheck } from 'react-icons/fi';
+import { SportIcon } from '../utils/sportIcons';
 
 const STATUS_STYLES = {
   upcoming:    { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-100', dot: 'bg-emerald-500' },
@@ -49,7 +45,7 @@ export default function ActivityDetail() {
   if (!activity) return <div className="text-center py-20 text-gray-500">Activity not found</div>;
 
   const joinedPlayers = activity.players?.filter(p => ['approved', 'confirmed'].includes(p.status)) || [];
-  const emoji = SPORT_EMOJI[activity.sport?.toLowerCase()] || 'ðŸ…';
+
   const statusStyle = STATUS_STYLES[activity.status] || STATUS_STYLES.upcoming;
   const spotsLeft = (activity.maxPlayers || 0) - joinedPlayers.length;
   const isPending = activity.players?.some(p => p.user?._id === user?._id && p.status === 'pending');
@@ -69,8 +65,8 @@ export default function ActivityDetail() {
         <div className="relative z-10">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-3xl flex-shrink-0">
-                {emoji}
+              <div className="w-14 h-14 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
+                <SportIcon sport={activity.sport} size={32} className="text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-display font-bold text-white leading-tight">{activity.title}</h1>
@@ -104,7 +100,7 @@ export default function ActivityDetail() {
             {activity.costPerPlayer > 0 && (
               <div className="flex items-center gap-1.5 text-primary-100 text-sm">
                 <FiDollarSign size={14} />
-                â‚¹{activity.costPerPlayer}/player
+                ₹{activity.costPerPlayer}/player
               </div>
             )}
           </div>
@@ -163,7 +159,7 @@ export default function ActivityDetail() {
             </div>
 
             {joinedPlayers.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No players yet â€” be the first to join!</p>
+              <p className="text-sm text-gray-400 text-center py-4">No players yet — be the first to join!</p>
             ) : (
               <div className="space-y-3">
                 {joinedPlayers.map((p) => (
@@ -195,18 +191,18 @@ export default function ActivityDetail() {
           <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 sticky top-4">
             <div className="text-center mb-4">
               <p className="text-3xl font-bold text-gray-900">
-                {activity.costPerPlayer > 0 ? `â‚¹${activity.costPerPlayer}` : 'Free'}
+                {activity.costPerPlayer > 0 ? `₹${activity.costPerPlayer}` : 'Free'}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">per player</p>
             </div>
 
             {isJoined ? (
-              <div className="w-full py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold text-center ring-1 ring-emerald-100">
-                âœ“ You've joined
+              <div className="w-full py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold text-center ring-1 ring-emerald-100 flex items-center justify-center gap-1.5">
+                <FiCheck size={15} /> You've joined
               </div>
             ) : isPending ? (
-              <div className="w-full py-2.5 rounded-xl bg-amber-50 text-amber-600 text-sm font-semibold text-center ring-1 ring-amber-100">
-                â³ Request Pending
+              <div className="w-full py-2.5 rounded-xl bg-amber-50 text-amber-600 text-sm font-semibold text-center ring-1 ring-amber-100 flex items-center justify-center gap-1.5">
+                <FiClock size={15} /> Request Pending
               </div>
             ) : canJoin ? (
               <button
@@ -214,7 +210,7 @@ export default function ActivityDetail() {
                 disabled={joinMutation.isPending}
                 className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors disabled:opacity-60"
               >
-                {joinMutation.isPending ? 'Joiningâ€¦' : 'Join Game'}
+                {joinMutation.isPending ? 'Joining...' : 'Join Game'}
               </button>
             ) : (
               <div className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-400 text-sm font-semibold text-center cursor-not-allowed">

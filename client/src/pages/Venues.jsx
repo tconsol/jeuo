@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
+import { SportIcon } from '../utils/sportIcons';
 import api from '../lib/api';
 import { FiMapPin, FiStar, FiSearch } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { getVenueImageUrl } from '../utils';
 
 const SPORTS = [
-  { id: 'all', label: 'All Sports', emoji: '🏅' },
-  { id: 'cricket', label: 'Cricket', emoji: '🏏' },
-  { id: 'football', label: 'Football', emoji: '⚽' },
-  { id: 'basketball', label: 'Basketball', emoji: '🏀' },
-  { id: 'tennis', label: 'Tennis', emoji: '🎾' },
-  { id: 'badminton', label: 'Badminton', emoji: '🏸' },
-  { id: 'volleyball', label: 'Volleyball', emoji: '🏐' },
+  { id: 'all',        label: 'All Sports' },
+  { id: 'cricket',    label: 'Cricket' },
+  { id: 'football',   label: 'Football' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'tennis',     label: 'Tennis' },
+  { id: 'badminton',  label: 'Badminton' },
+  { id: 'volleyball', label: 'Volleyball' },
 ];
 
 export default function Venues() {
@@ -79,7 +80,7 @@ export default function Venues() {
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
             }`}
           >
-            <span>{sport.emoji}</span>
+            {sport.id !== 'all' && <SportIcon sport={sport.id} size={14} />}
             {sport.label}
           </button>
         ))}
@@ -117,7 +118,7 @@ export default function Venues() {
                   <img src={getVenueImageUrl(venue)} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   {venue.sport && (
                     <span className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-gray-700 px-2.5 py-1 rounded-full text-xs font-medium">
-                      {SPORTS.find((s) => s.id === venue.sport)?.emoji} {venue.sport}
+                      <SportIcon sport={venue.sport} size={12} /> {venue.sport}
                     </span>
                   )}
                 </div>

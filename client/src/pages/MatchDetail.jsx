@@ -1,4 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { SportIcon } from '../utils/sportIcons';
+import { FiMapPin, FiClock, FiTarget, FiBarChart2 } from 'react-icons/fi';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,14 +26,14 @@ const SCOREBOARD_MAP = {
   volleyball: VolleyballScoreboard,
 };
 
-const SPORT_META = {
-  cricket:      { icon: '🏏', color: 'from-indigo-600 to-indigo-800' },
-  football:     { icon: '⚽', color: 'from-emerald-600 to-emerald-800' },
-  basketball:   { icon: '🏀', color: 'from-orange-500 to-orange-700' },
-  tennis:       { icon: '🎾', color: 'from-lime-600 to-green-700' },
-  badminton:    { icon: '🏸', color: 'from-blue-600 to-blue-800' },
-  table_tennis: { icon: '🏓', color: 'from-purple-600 to-purple-800' },
-  volleyball:   { icon: '🏐', color: 'from-amber-500 to-amber-700' },
+const SPORT_GRADIENT = {
+  cricket:      'from-emerald-600 via-emerald-700 to-teal-700',
+  football:     'from-green-600 via-green-700 to-emerald-700',
+  basketball:   'from-orange-500 via-orange-600 to-amber-600',
+  tennis:       'from-lime-500 via-lime-600 to-green-600',
+  badminton:    'from-blue-600 via-blue-700 to-indigo-700',
+  volleyball:   'from-yellow-500 via-yellow-600 to-amber-600',
+  table_tennis: 'from-red-500 via-red-600 to-rose-600',
 };
 
 export default function MatchDetail() {
@@ -40,7 +42,7 @@ export default function MatchDetail() {
   const dispatch = useDispatch();
   const { liveScore, isConnected } = useSelector((s) => s.match);
 
-  const { data: match, isLoading } = useQuery({
+  const { data: matchData, isLoading } = useQuery({
     queryKey: ['match', id],
     queryFn: async () => {
       const { data } = await api.get(`/scoring/${id}`);
@@ -48,12 +50,15 @@ export default function MatchDetail() {
     },
   });
 
+  const match = matchData?.match;
+  const initialScore = matchData?.score;
+
   // Set score from initial fetch
   useEffect(() => {
-    if (match?.score) {
-      dispatch(setLiveScore({ score: match.score, scoreVersion: match.scoreVersion }));
+    if (initialScore) {
+      dispatch(setLiveScore({ score: initialScore, scoreVersion: match?.scoringVersion }));
     }
-  }, [match, dispatch]);
+  }, [initialScore, match, dispatch]);
 
   // Connect to live socket
   useEffect(() => {
@@ -103,7 +108,9 @@ export default function MatchDetail() {
   if (!match) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="text-5xl mb-2">🏟️</div>
+        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <SportIcon sport="cricket" size={40} />
+        </div>
         <p className="text-gray-500 font-medium">Match not found</p>
         <button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition text-sm font-medium">
           ← Go Back
@@ -112,13 +119,13 @@ export default function MatchDetail() {
     );
   }
 
-  const score = liveScore || match.score;
+  const score = liveScore || initialScore;
   const ScoreboardComponent = SCOREBOARD_MAP[match.sport];
-  const meta = SPORT_META[match.sport] || SPORT_META.cricket;
+  const sportGradient = SPORT_GRADIENT[match.sport] || SPORT_GRADIENT.cricket;
   const homeTeam = match.teams?.home;
   const awayTeam = match.teams?.away;
-  const homeScore = score?.home?.goals || score?.innings?.[0]?.totalRuns || 0;
-  const awayScore = score?.away?.goals || score?.innings?.[1]?.totalRuns || 0;
+  const homeScore = score?.home?.goals ?? score?.currentInningsData?.runs ?? 0;
+  const awayScore = score?.away?.goals ?? score?.innings?.[0]?.runs ?? 0;
 
   return (
     <motion.div
@@ -135,10 +142,10 @@ export default function MatchDetail() {
       </button>
 
       {/* Hero header */}
-      <div className={`bg-gradient-to-br ${meta.color} rounded-3xl p-8 text-white shadow-lg`}>
+      <div className={`bg-gradient-to-br ${sportGradient} rounded-3xl p-8 text-white shadow-lg`}>
         <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="text-5xl mb-2">{meta.icon}</div>
+            <div className="mb-2"><SportIcon sport={match.sport} size={52} className="text-white/90" /></div>
             <h1 className="text-3xl font-bold capitalize">{match.sport?.replace('_', ' ')}</h1>
             <p className="text-white/60 text-sm mt-1">Match Details</p>
           </div>
@@ -178,18 +185,18 @@ export default function MatchDetail() {
         </div>
 
         {/* Match info */}
-        <div className="space-y-1 text-sm text-white/70">
+        <div className="space-y-2 text-sm text-white/80">
           {match.venue && (
-            <p>📍 {match.venue.name}</p>
+            <p className="flex items-center gap-2 font-medium"><FiMapPin size={14} /> {match.venue.name}</p>
           )}
           {match.scheduledAt && (
-            <p>🕐 {new Date(match.scheduledAt).toLocaleString('en-IN', { 
+            <p className="flex items-center gap-2"><FiClock size={14} /> {new Date(match.scheduledAt).toLocaleString('en-IN', { 
               day: 'numeric', month: 'short', year: 'numeric',
               hour: '2-digit', minute: '2-digit'
             })}</p>
           )}
           {match.format && (
-            <p>🎯 {match.format}</p>
+            <p className="flex items-center gap-2"><FiTarget size={14} /> {typeof match.format === 'object' ? (match.format.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : '-') : match.format}</p>
           )}
         </div>
       </div>
@@ -208,11 +215,14 @@ export default function MatchDetail() {
       {/* Match info cards */}
       <div className="grid grid-cols-2 gap-3">
         {match.venue && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Venue</p>
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 shadow-sm p-4 ring-1 ring-blue-50">
+            <p className="text-xs text-blue-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-1"><FiMapPin size={12} /> Venue</p>
             <p className="font-semibold text-gray-900">{match.venue.name}</p>
-            {match.venue.location && (
-              <p className="text-xs text-gray-500 mt-1">{match.venue.location}</p>
+            {match.venue.location?.address && (
+              <p className="text-xs text-gray-500 mt-1">{match.venue.location.address}</p>
+            )}
+            {match.venue.location?.city && (
+              <p className="text-xs text-gray-400 mt-0.5">{match.venue.location.city}{match.venue.location.state ? `, ${match.venue.location.state}` : ''}</p>
             )}
           </div>
         )}
@@ -220,7 +230,11 @@ export default function MatchDetail() {
         {match.format && (
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Format</p>
-            <p className="font-semibold text-gray-900">{match.format}</p>
+            <p className="font-semibold text-gray-900">
+              {typeof match.format === 'object'
+                ? (match.format.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : '-')
+                : match.format}
+            </p>
           </div>
         )}
 
@@ -301,7 +315,7 @@ export default function MatchDetail() {
             onClick={() => navigate(`/scoring/${id}`)}
             className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-2xl transition active:scale-95"
           >
-            📊 View Live Scoring
+            <FiBarChart2 size={16} className="inline mr-1" /> View Live Scoring
           </button>
         </div>
       )}

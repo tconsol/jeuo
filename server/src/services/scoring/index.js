@@ -55,7 +55,9 @@ class ScoringService {
    * Publishes real-time update via Redis pub/sub.
    */
   static async recordEvent(matchId, eventData, scorerId) {
-    const match = await Match.findById(matchId);
+    const match = await Match.findById(matchId)
+      .populate('teams.home.players', 'name')
+      .populate('teams.away.players', 'name');
     if (!match) throw new Error('Match not found');
     if (match.status !== 'live' && match.status !== 'paused') {
       throw new Error('Match is not live');
@@ -114,7 +116,7 @@ class ScoringService {
     }
 
     // Auto-generate commentary for cricket
-    if (match.sport === 'cricket' && event.type === 'delivery') {
+    if (match.sport === 'cricket' && (event.type === 'delivery' || event.type === 'wicket')) {
       const commentary = this.generateCommentary(match, event.toObject(), newScore);
       if (commentary) {
         await Match.findByIdAndUpdate(matchId, {
@@ -259,6 +261,7 @@ class ScoringService {
       .populate('teams.home.players', 'name avatar')
       .populate('teams.away.players', 'name avatar')
       .populate('scorers', 'name')
+      .populate('venue', 'name location images isIndoor surfaceType')
       .lean();
     if (!match) throw new Error('Match not found');
     const events = await Event.find({ match: matchId, isUndone: false })

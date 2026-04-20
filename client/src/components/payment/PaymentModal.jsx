@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiCreditCard, FiDollarSign } from 'react-icons/fi';
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils';
 
@@ -31,7 +32,7 @@ export default function PaymentModal({ isOpen, onClose, amount, booking, onPay }
               onClick={() => setMethod(m)}
               className={`w-full p-3 rounded-lg border text-left text-sm ${method === m ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'}`}
             >
-              {m === 'razorpay' ? '💳 Razorpay (Cards, UPI, NetBanking)' : '👛 Wallet Balance'}
+              {m === 'razorpay' ? '<FiCreditCard size={18} className="inline mr-1" /> Razorpay (Cards, UPI, NetBanking)' : '<FiDollarSign size={18} className="inline mr-1" /> Wallet Balance'}
             </button>
           ))}
         </div>

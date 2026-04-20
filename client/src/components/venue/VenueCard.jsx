@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FiStar } from 'react-icons/fi';
 import Badge from '../common/Badge';
 import { formatCurrency, getVenueImageUrl } from '../../utils';
 
@@ -14,7 +15,7 @@ export default function VenueCard({ venue }) {
         <div className="flex items-start justify-between">
           <h3 className="font-semibold text-gray-900 line-clamp-1">{venue.name}</h3>
           {venue.rating && (
-            <span className="flex items-center gap-1 text-sm text-yellow-600 font-medium">⭐ {venue.rating.toFixed(1)}</span>
+            <span className="flex items-center gap-1 text-sm text-yellow-600 font-medium"><FiStar size={12} fill="currentColor" className="inline" /> {venue.rating.toFixed(1)}</span>
           )}
         </div>
         <p className="text-xs text-gray-500 mt-1 line-clamp-1">{venue.location?.city || venue.location?.address || 'Location'}</p>

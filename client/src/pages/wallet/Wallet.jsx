@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiDollarSign } from 'react-icons/fi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '../../services';
 import { WalletCard } from '../../components/payment';
@@ -28,7 +29,7 @@ export default function Wallet() {
       <div>
         <h2 className="font-semibold text-gray-900 mb-3">Transactions</h2>
         {!txns?.length ? (
-          <EmptyState icon="💸" title="No transactions" description="Your wallet transactions will appear here." />
+          <EmptyState icon={<FiDollarSign size={48} className="text-gray-300" />} title="No transactions" description="Your wallet transactions will appear here." />
         ) : (
           <div className="space-y-2">
             {txns.map((t) => (

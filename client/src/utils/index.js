@@ -51,13 +51,11 @@ export function getDistanceLabel(meters) {
   return `${(meters / 1000).toFixed(1)}km`;
 }
 
+export { SportIcon, getSportIcon } from './sportIcons';
+
+/** @deprecated Use SportIcon component instead */
 export function sportIcon(sport) {
-  const icons = {
-    cricket: '🏏', football: '⚽', basketball: '🏀',
-    tennis: '🎾', badminton: '🏸', volleyball: '🏐',
-    'table-tennis': '🏓',
-  };
-  return icons[sport] || '🏅';
+  return sport || '';
 }
 
 export function capitalize(str) {

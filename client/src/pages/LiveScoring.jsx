@@ -4,19 +4,30 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import { matchSocket } from '../lib/socket';
+import {
+  FiArrowLeft, FiPlay, FiFlag, FiRadio, FiBarChart2, FiMic, FiInfo, FiX,
+  FiAlertTriangle, FiUser, FiMapPin, FiRotateCcw, FiTarget, FiTv, FiSquare, FiCheck,
+} from 'react-icons/fi';
+import {
+  GiCricketBat, GiSoccerBall, GiBasketballBall, GiTennisBall,
+  GiShuttlecock, GiVolleyballBall, GiPingPongBat, GiCoins,
+} from 'react-icons/gi';
+import { MdDirectionsRun } from 'react-icons/md';
+import { BiSolidHandRight } from 'react-icons/bi';
+import coinFlipMp3 from '../assets/freesound_community-coin-flip-88793.mp3';
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════════════════════════
    CONSTANTS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ═══════════════════════════════════════════════════════════ */
 
 const SPORT_META = {
-  cricket:      { icon: 'ðŸ', color: 'from-indigo-600 to-violet-700',   accent: 'indigo', label: 'Cricket' },
-  football:     { icon: 'âš½', color: 'from-emerald-600 to-emerald-800', accent: 'emerald', label: 'Football' },
-  basketball:   { icon: 'ðŸ€', color: 'from-orange-500 to-orange-700',   accent: 'orange', label: 'Basketball' },
-  tennis:       { icon: 'ðŸŽ¾', color: 'from-lime-600 to-green-700',      accent: 'green', label: 'Tennis' },
-  badminton:    { icon: 'ðŸ¸', color: 'from-blue-600 to-blue-800',       accent: 'blue', label: 'Badminton' },
-  table_tennis: { icon: 'ðŸ“', color: 'from-purple-600 to-purple-800',   accent: 'purple', label: 'Table Tennis' },
-  volleyball:   { icon: 'ðŸ', color: 'from-amber-500 to-amber-700',     accent: 'amber', label: 'Volleyball' },
+  cricket:      { icon: GiCricketBat,     color: 'from-indigo-600 to-violet-700',   accent: 'indigo',  label: 'Cricket' },
+  football:     { icon: GiSoccerBall,     color: 'from-emerald-600 to-emerald-800', accent: 'emerald', label: 'Football' },
+  basketball:   { icon: GiBasketballBall, color: 'from-orange-500 to-orange-700',   accent: 'orange',  label: 'Basketball' },
+  tennis:       { icon: GiTennisBall,     color: 'from-lime-600 to-green-700',      accent: 'green',   label: 'Tennis' },
+  badminton:    { icon: GiShuttlecock,      color: 'from-blue-600 to-blue-800',       accent: 'blue',    label: 'Badminton' },
+  table_tennis: { icon: GiPingPongBat,    color: 'from-purple-600 to-purple-800',   accent: 'purple',  label: 'Table Tennis' },
+  volleyball:   { icon: GiVolleyballBall, color: 'from-amber-500 to-amber-700',     accent: 'amber',   label: 'Volleyball' },
 };
 
 const CRICKET_SHOT_AREAS = [
@@ -35,17 +46,15 @@ const CRICKET_SHOT_AREAS = [
 ];
 
 const WICKET_TYPES = [
-  { id: 'bowled', label: 'Bowled', icon: 'ðŸ' },
-  { id: 'caught', label: 'Caught', icon: 'ðŸ¤²' },
-  { id: 'lbw', label: 'LBW', icon: 'ðŸ¦µ' },
-  { id: 'run_out', label: 'Run Out', icon: 'ðŸƒ' },
-  { id: 'stumped', label: 'Stumped', icon: 'ðŸ§¤' },
-  { id: 'hit_wicket', label: 'Hit Wicket', icon: 'ðŸ’¥' },
+  { id: 'bowled',     label: 'Bowled',     icon: GiCricketBat },
+  { id: 'caught',     label: 'Caught',     icon: BiSolidHandRight },
+  { id: 'lbw',        label: 'LBW',        icon: FiTarget },
+  { id: 'run_out',    label: 'Run Out',    icon: MdDirectionsRun },
+  { id: 'stumped',    label: 'Stumped',    icon: FiSquare },
+  { id: 'hit_wicket', label: 'Hit Wicket', icon: FiAlertTriangle },
 ];
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ANIMATION OVERLAYS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ANIMATION OVERLAYS */
 
 function BoundaryAnimation({ type, onDone }) {
   useEffect(() => { const t = setTimeout(onDone, 2200); return () => clearTimeout(t); }, [onDone]);
@@ -63,8 +72,8 @@ function BoundaryAnimation({ type, onDone }) {
           transition={{ duration: 0.6, repeat: 2 }}
           className="text-center"
         >
-          <div className={`text-[120px] leading-none ${isSix ? 'drop-shadow-[0_0_40px_rgba(168,85,247,0.8)]' : 'drop-shadow-[0_0_40px_rgba(59,130,246,0.8)]'}`}>
-            {isSix ? '6ï¸âƒ£' : '4ï¸âƒ£'}
+          <div className={`text-[120px] leading-none font-black ${isSix ? 'text-purple-400 drop-shadow-[0_0_40px_rgba(168,85,247,0.8)]' : 'text-blue-400 drop-shadow-[0_0_40px_rgba(59,130,246,0.8)]'}`}>
+            {isSix ? '6' : '4'}
           </div>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -108,7 +117,7 @@ function WicketAnimation({ onDone }) {
         transition={{ type: 'spring', damping: 8 }}
         className="text-center"
       >
-        <div className="text-[100px] leading-none">ðŸŽ³</div>
+        <div className="flex justify-center mb-2"><GiCricketBat size={96} className="text-red-300" /></div>
         <motion.p
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -120,9 +129,7 @@ function WicketAnimation({ onDone }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   COIN TOSS COMPONENT
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* COIN TOSS COMPONENT */
 
 function TossFlow({ match, onTossComplete }) {
   const [step, setStep] = useState('call');
@@ -130,9 +137,18 @@ function TossFlow({ match, onTossComplete }) {
   const [callerChoice, setCallerChoice] = useState('heads');
   const [flipping, setFlipping] = useState(false);
   const [result, setResult] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const playCoinSound = () => {
+    try {
+      const audio = new Audio(coinFlipMp3);
+      audio.play().catch(() => {});
+    } catch { /* ignore */ }
+  };
 
   const doFlip = async () => {
     setFlipping(true);
+    playCoinSound();
     try {
       const { data } = await api.post(`/scoring/${match._id}/toss`, {
         callingTeam,
@@ -142,12 +158,14 @@ function TossFlow({ match, onTossComplete }) {
       setTimeout(() => {
         setResult(toss);
         setFlipping(false);
-        setStep('decision');
-      }, 2000);
+        setShowResult(true);
+      }, 2600);
     } catch {
       setFlipping(false);
     }
   };
+
+  const proceedToDecision = () => { setShowResult(false); setStep('decision'); };
 
   const setDecision = async (decision) => {
     try {
@@ -160,69 +178,157 @@ function TossFlow({ match, onTossComplete }) {
 
   const homeName = match.teams?.home?.name || 'Home';
   const awayName = match.teams?.away?.name || 'Away';
+  const isHeads = result?.coinResult === 'heads';
+
+  const CoinHeads = ({ style = {} }) => (
+    <div style={{ backfaceVisibility: 'hidden', borderRadius: '50%', position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #fde68a 0%, #f59e0b 45%, #b45309 100%)', boxShadow: 'inset 0 4px 8px rgba(255,255,200,0.5), inset 0 -4px 8px rgba(0,0,0,0.2), 0 8px 32px rgba(245,158,11,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '4px solid rgba(180,83,9,0.3)', ...style }}>
+      <span style={{ fontSize: 36, fontWeight: 900, color: '#78350f', lineHeight: 1 }}>H</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: '#92400e', letterSpacing: 2, marginTop: 2 }}>HEADS</span>
+    </div>
+  );
+
+  const CoinTails = ({ style = {} }) => (
+    <div style={{ backfaceVisibility: 'hidden', transform: 'rotateX(180deg)', borderRadius: '50%', position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 45%, #475569 100%)', boxShadow: 'inset 0 4px 8px rgba(255,255,255,0.4), inset 0 -4px 8px rgba(0,0,0,0.2), 0 8px 32px rgba(100,116,139,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '4px solid rgba(71,85,105,0.3)', ...style }}>
+      <span style={{ fontSize: 36, fontWeight: 900, color: '#1e293b', lineHeight: 1 }}>T</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: '#334155', letterSpacing: 2, marginTop: 2 }}>TAILS</span>
+    </div>
+  );
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-4">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">ðŸª™ Coin Toss</h3>
+    <div className="bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-4 flex items-center gap-3">
+        <div>
+          <h3 className="text-base font-bold text-white">Coin Toss</h3>
+          <p className="text-xs text-amber-100">Decide who bats first</p>
+        </div>
       </div>
+
       <div className="p-6">
         <AnimatePresence mode="wait">
-          {step === 'call' && !flipping && (
-            <motion.div key="call" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
+          {/* Step 1: pick team + call */}
+          {step === 'call' && !flipping && !showResult && (
+            <motion.div key="call" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+              {/* Live coin preview flips on selection */}
+              <div className="flex justify-center py-2">
+                <div style={{ perspective: '800px' }}>
+                  <div style={{ transformStyle: 'preserve-3d', width: 112, height: 112, position: 'relative', transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1)', transform: `rotateX(${callerChoice === 'heads' ? 0 : 180}deg)` }}>
+                    <CoinHeads />
+                    <CoinTails />
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-3">Who calls the toss?</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Who calls the toss?</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[['home', homeName], ['away', awayName]].map(([key, name]) => (
                     <button key={key} onClick={() => setCallingTeam(key)}
-                      className={`py-3 rounded-xl text-sm font-semibold transition-all ${
-                        callingTeam === key ? 'bg-indigo-600 text-white shadow ring-2 ring-indigo-300' : 'bg-gray-100 text-gray-600 hover:bg-indigo-50'
+                      className={`py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+                        callingTeam === key ? 'bg-primary-600 text-white shadow-md ring-2 ring-primary-300' : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700'
                       }`}>{name}</button>
                   ))}
                 </div>
               </div>
+
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-3">Call</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Call</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {['heads', 'tails'].map((c) => (
-                    <button key={c} onClick={() => setCallerChoice(c)}
-                      className={`py-3 rounded-xl text-sm font-semibold capitalize transition-all ${
-                        callerChoice === c ? 'bg-amber-500 text-white shadow ring-2 ring-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-amber-50'
-                      }`}>{c === 'heads' ? 'ðŸª™ Heads' : 'ðŸª™ Tails'}</button>
-                  ))}
+                  <button onClick={() => setCallerChoice('heads')}
+                    className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                      callerChoice === 'heads' ? 'bg-amber-400 text-amber-900 shadow-md ring-2 ring-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-amber-50'
+                    }`}>
+                    <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#fde68a,#f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#78350f' }}>H</span>
+                    Heads
+                  </button>
+                  <button onClick={() => setCallerChoice('tails')}
+                    className={`py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                      callerChoice === 'tails' ? 'bg-slate-400 text-white shadow-md ring-2 ring-slate-300' : 'bg-gray-100 text-gray-600 hover:bg-slate-50'
+                    }`}>
+                    <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#cbd5e1,#64748b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#1e293b' }}>T</span>
+                    Tails
+                  </button>
                 </div>
               </div>
+
               <button onClick={doFlip}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold text-sm hover:shadow-lg transition active:scale-95">
-                Flip Coin ðŸª™
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-900 font-black text-base hover:from-amber-600 hover:to-yellow-500 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2">
+                Flip Coin
               </button>
             </motion.div>
           )}
 
+          {/* Flipping animation */}
           {flipping && (
-            <motion.div key="flip" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
-              <motion.div animate={{ rotateY: [0, 1800] }} transition={{ duration: 2, ease: 'easeInOut' }} className="text-8xl">ðŸª™</motion.div>
-              <p className="text-gray-500 text-sm mt-4 animate-pulse">Flipping...</p>
+            <motion.div key="flip" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-6">
+              <div style={{ perspective: '800px' }}>
+                <motion.div
+                  style={{ transformStyle: 'preserve-3d', width: 128, height: 128, position: 'relative' }}
+                  animate={{ rotateX: [0, 360 * 7], y: [0, -70, 0, -50, 0, -25, 0, -10, 0] }}
+                  transition={{ duration: 2.4, ease: [0.22, 0.8, 0.5, 1] }}
+                >
+                  <CoinHeads />
+                  <CoinTails />
+                </motion.div>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex gap-1">
+                  {[0,1,2].map(i => (
+                    <motion.div key={i} animate={{ scale: [1,1.4,1], opacity: [0.4,1,0.4] }} transition={{ duration: 0.6, delay: i*0.2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-amber-400" />
+                  ))}
+                </div>
+                <p className="text-amber-600 font-semibold text-sm">Flipping the coin...</p>
+              </div>
             </motion.div>
           )}
 
-          {step === 'decision' && result && (
-            <motion.div key="decision" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-              <div className="text-center py-4">
-                <div className="text-6xl mb-3">ðŸª™</div>
-                <p className="text-lg font-bold text-gray-900">It's <span className="text-amber-600 capitalize">{result.coinResult}</span>!</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  <span className="font-semibold text-indigo-600">{result.toss.wonBy === 'home' ? homeName : awayName}</span> won the toss!
+          {/* Result reveal */}
+          {showResult && result && !flipping && (
+            <motion.div key="result" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 12 }} className="flex flex-col items-center py-6 gap-5">
+              <motion.div
+                style={{ perspective: '800px', transformStyle: 'preserve-3d', position: 'relative', width: 136, height: 136 }}
+                animate={{ rotateX: isHeads ? 0 : 180 }}
+                transition={{ duration: 0.5 }}
+              >
+                <CoinHeads />
+                <CoinTails />
+              </motion.div>
+
+              <div className="text-center">
+                <p className="text-3xl font-black text-gray-900 capitalize">{result.coinResult}!</p>
+                <p className="text-gray-500 text-sm mt-1.5">
+                  <span className="font-bold text-primary-600">{result.toss.wonBy === 'home' ? homeName : awayName}</span>
+                  {' '}won the toss
                 </p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-3">Choose to</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => setDecision('bat')}
-                    className="py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition active:scale-95 shadow">ðŸ Bat First</button>
-                  <button onClick={() => setDecision('bowl')}
-                    className="py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition active:scale-95 shadow">ðŸŽ¯ Bowl First</button>
-                </div>
+
+              <button onClick={proceedToDecision}
+                className="px-8 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm transition active:scale-95 shadow-lg shadow-primary-500/25 flex items-center gap-2">
+                Choose to bat or bowl <span>→</span>
+              </button>
+            </motion.div>
+          )}
+
+          {/* Decision step */}
+          {step === 'decision' && result && !showResult && (
+            <motion.div key="decision" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+              <div className="text-center py-2">
+                <p className="text-sm text-gray-500">
+                  <span className="font-bold text-primary-600">{result.toss.wonBy === 'home' ? homeName : awayName}</span>
+                  {' '}won the toss — choose to
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setDecision('bat')}
+                  className="py-6 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-white font-bold text-sm transition active:scale-95 shadow-xl shadow-primary-500/25 flex flex-col items-center gap-3">
+                  <GiCricketBat size={28} />
+                  <span className="text-base">Bat First</span>
+                </button>
+                <button onClick={() => setDecision('bowl')}
+                  className="py-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-bold text-sm transition active:scale-95 shadow-xl shadow-emerald-500/25 flex flex-col items-center gap-3">
+                  <FiTarget size={26} />
+                  <span className="text-base">Bowl First</span>
+                </button>
               </div>
             </motion.div>
           )}
@@ -232,9 +338,75 @@ function TossFlow({ match, onTossComplete }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PLAYER SELECTION (cricket)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* CUSTOM DROPDOWN SELECT */
+
+function CustomSelect({ value, onChange, options, placeholder, disabled = [], label, icon: Icon }) {
+  const [open, setOpen] = useState(false);
+  const selectedOption = options.find(o => o._id === value);
+
+  return (
+    <div className="relative">
+      {label && (
+        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+          {Icon && <Icon size={14} />} {label}
+        </label>
+      )}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left border border-indigo-300 rounded-xl px-4 py-2.5 text-sm bg-white hover:bg-indigo-50 transition flex items-center justify-between"
+      >
+        <span className={selectedOption ? 'text-gray-900 font-medium' : 'text-gray-400'}>
+          {selectedOption ? selectedOption.name : placeholder}
+        </span>
+        <FiPlay size={14} className={`transition transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-indigo-300 rounded-xl shadow-xl z-50 overflow-hidden"
+          >
+            <div className="max-h-56 overflow-y-auto">
+              {options.map((opt) => {
+                const isDisabled = disabled.includes(opt._id);
+                const isSelected = value === opt._id;
+                return (
+                  <button
+                    key={opt._id}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        onChange(opt._id);
+                        setOpen(false);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-3 ${
+                      isSelected
+                        ? 'bg-indigo-100 text-indigo-900 font-semibold'
+                        : isDisabled
+                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                        : 'hover:bg-indigo-50 text-gray-700'
+                    }`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-indigo-600' : 'bg-gray-300'}`} />
+                    {opt.name}
+                    {isDisabled && <span className="text-xs ml-auto text-gray-400">(unavailable)</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* PLAYER SELECTION (cricket) */
 
 function PlayerSelection({ match, toss, onConfirm }) {
   const [striker, setStriker] = useState('');
@@ -254,40 +426,40 @@ function PlayerSelection({ match, toss, onConfirm }) {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
-        <h3 className="text-lg font-bold text-white">ðŸ‘¤ Select Opening Players</h3>
+        <h3 className="text-lg font-bold text-white flex items-center gap-2"><FiUser size={18} /> Select Opening Players</h3>
         <p className="text-indigo-200 text-xs mt-0.5">Choose opening batsmen and bowler</p>
       </div>
       <div className="p-6 space-y-5">
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">ðŸ Striker ({battingTeamName})</label>
-          <select value={striker} onChange={(e) => setStriker(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400">
-            <option value="">Select striker...</option>
-            {battingPlayers.map((p) => (
-              <option key={p._id} value={p._id} disabled={p._id === nonStriker}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">ðŸ Non-Striker ({battingTeamName})</label>
-          <select value={nonStriker} onChange={(e) => setNonStriker(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400">
-            <option value="">Select non-striker...</option>
-            {battingPlayers.map((p) => (
-              <option key={p._id} value={p._id} disabled={p._id === striker}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">ðŸŽ¯ Opening Bowler ({bowlingTeamName})</label>
-          <select value={bowler} onChange={(e) => setBowler(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400">
-            <option value="">Select bowler...</option>
-            {bowlingPlayers.map((p) => (
-              <option key={p._id} value={p._id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
+        <CustomSelect
+          value={striker}
+          onChange={setStriker}
+          options={battingPlayers}
+          placeholder="Select striker..."
+          disabled={[nonStriker].filter(Boolean)}
+          label={`Striker (${battingTeamName})`}
+          icon={GiCricketBat}
+        />
+
+        <CustomSelect
+          value={nonStriker}
+          onChange={setNonStriker}
+          options={battingPlayers}
+          placeholder="Select non-striker..."
+          disabled={[striker].filter(Boolean)}
+          label={`Non-Striker (${battingTeamName})`}
+          icon={GiCricketBat}
+        />
+
+        <CustomSelect
+          value={bowler}
+          onChange={setBowler}
+          options={bowlingPlayers}
+          placeholder="Select bowler..."
+          disabled={[]}
+          label={`Opening Bowler (${bowlingTeamName})`}
+          icon={FiTarget}
+        />
+
         <button
           onClick={() => onConfirm({
             striker: striker || battingPlayers[0]?._id,
@@ -296,16 +468,14 @@ function PlayerSelection({ match, toss, onConfirm }) {
             battingTeam: battingTeamKey,
             bowlingTeam: bowlingTeamKey,
           })}
-          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm hover:shadow-lg transition active:scale-95"
-        >Start Innings â–¶ï¸</button>
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm hover:shadow-lg transition active:scale-95 mt-2"
+        ><FiPlay size={15} /> Start Innings</button>
       </div>
     </div>
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SHOT AREA GROUND MAP
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* SHOT AREA GROUND MAP */
 
 function ShotAreaPicker({ onSelect, onCancel }) {
   return (
@@ -313,7 +483,7 @@ function ShotAreaPicker({ onSelect, onCancel }) {
       className="bg-white rounded-2xl shadow-xl border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="font-semibold text-gray-800 text-sm">Select Shot Area</h4>
-        <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-xs">âœ• Skip</button>
+        <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-xs flex items-center gap-1"><FiX size={12} /> Skip</button>
       </div>
       <div className="relative w-full aspect-square max-w-[280px] mx-auto">
         <div className="absolute inset-0 rounded-full bg-gradient-to-b from-green-200 to-green-400 border-2 border-green-500/30" />
@@ -335,39 +505,52 @@ function ShotAreaPicker({ onSelect, onCancel }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   CRICKET SCORER PANEL
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* CRICKET SCORER PANEL */
 
 function CricketScorerPanel({ onEvent, match, score }) {
-  const [extras, setExtras] = useState(null);
   const [showWicket, setShowWicket] = useState(false);
   const [showShotArea, setShowShotArea] = useState(false);
+  const [showExtrasModal, setShowExtrasModal] = useState(null); // 'wide'|'no_ball'|'bye'|'leg_bye'
   const [pendingRuns, setPendingRuns] = useState(null);
   const [wicketType, setWicketType] = useState('');
   const [fielder, setFielder] = useState('');
+  const [runOutRuns, setRunOutRuns] = useState(0);
 
   const innings = score?.currentInningsData;
   const bowlingTeamKey = innings?.bowlingTeam || 'away';
+  const battingTeamKey = innings?.battingTeam || 'home';
   const bowlingPlayers = match?.teams?.[bowlingTeamKey]?.players || [];
+  const allPlayers = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
   const currentOverBalls = innings?.currentOver || [];
 
-  const submitBall = (runs, shotArea) => {
+  const playerName = (id) => {
+    if (!id) return '-';
+    const p = allPlayers.find(x => (x._id || x)?.toString() === id?.toString());
+    return p?.name || '—';
+  };
+
+  const striker = innings?.batsmen?.striker;
+  const nonStriker = innings?.batsmen?.nonStriker;
+  const currentBowler = innings?.currentBowler;
+  const strikerCard = striker && innings?.battingCard?.[striker];
+  const bowlerCard = currentBowler && innings?.bowlingCard?.[currentBowler];
+
+  const submitBall = (runs, extraType = null, shotArea = null) => {
     const payload = { type: 'delivery', data: { runs } };
-    if (extras) {
+    if (extraType) {
       payload.data.isExtra = true;
-      payload.data.extraType = extras;
+      payload.data.extraType = extraType;
       payload.data.extraRuns = runs;
     }
     if (shotArea) payload.data.shotArea = shotArea;
     onEvent(payload);
-    setExtras(null);
     setShowShotArea(false);
     setPendingRuns(null);
+    setShowExtrasModal(null);
   };
 
   const handleRunClick = (runs) => {
-    if (runs >= 4 && !extras) {
+    if (runs >= 4) {
       setPendingRuns(runs);
       setShowShotArea(true);
     } else {
@@ -375,91 +558,214 @@ function CricketScorerPanel({ onEvent, match, score }) {
     }
   };
 
+  const handleExtrasRun = (runs) => {
+    submitBall(runs, showExtrasModal);
+  };
+
   const submitWicket = () => {
     if (!wicketType) return;
-    onEvent({ type: 'wicket', data: { wicketType, fielder: fielder || undefined, runs: 0 } });
+    onEvent({
+      type: 'wicket',
+      data: {
+        wicketType,
+        fielder: fielder || undefined,
+        runs: wicketType === 'run_out' ? runOutRuns : 0,
+      },
+    });
     setShowWicket(false);
     setWicketType('');
     setFielder('');
+    setRunOutRuns(0);
   };
 
   const oversDisplay = innings
     ? `${Math.floor((innings.totalBalls || 0) / 6)}.${(innings.totalBalls || 0) % 6}`
     : '0.0';
 
+  const EXTRA_LABELS = { wide: 'Wide', no_ball: 'No Ball', bye: 'Bye', leg_bye: 'Leg Bye' };
+
   return (
     <div className="space-y-4">
-      {/* Current state bar */}
-      <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5">
-        <div className="text-sm">
-          <span className="text-gray-500">Over:</span>{' '}
-          <span className="font-bold text-gray-900">{oversDisplay}</span>
-        </div>
-        <div className="flex gap-1.5">
-          {currentOverBalls.map((ball, i) => (
-            <span key={i}
-              className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${
-                ball.isWicket ? 'bg-red-500 text-white' :
-                !ball.isLegalDelivery ? 'bg-amber-400 text-amber-900' :
-                ball.runs === 4 ? 'bg-blue-500 text-white' :
-                ball.runs === 6 ? 'bg-purple-500 text-white' :
-                ball.runs === 0 ? 'bg-gray-200 text-gray-600' :
-                'bg-indigo-100 text-indigo-700'
-              }`}>
-              {ball.isWicket ? 'W' : !ball.isLegalDelivery ? (ball.extraType?.[0]?.toUpperCase() || 'E') : ball.runs}
-            </span>
-          ))}
-        </div>
-      </div>
 
+      {/* Now Batting / Bowling bar */}
+      {innings?.battingTeam && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-2">
+          <div className="flex gap-3 text-xs">
+            <div className="flex-1">
+              <p className="text-indigo-400 font-semibold uppercase tracking-wider mb-1">Batting</p>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                <span className="font-bold text-gray-900">{playerName(striker)}</span>
+                {strikerCard && <span className="text-gray-500 ml-1">{strikerCard.runs}({strikerCard.balls})</span>}
+              </div>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />
+                <span className="text-gray-600">{playerName(nonStriker)}</span>
+                {nonStriker && innings?.battingCard?.[nonStriker] && (
+                  <span className="text-gray-400 ml-1">{innings.battingCard[nonStriker].runs}({innings.battingCard[nonStriker].balls})</span>
+                )}
+              </div>
+            </div>
+            <div className="w-px bg-indigo-200" />
+            <div className="flex-1">
+              <p className="text-indigo-400 font-semibold uppercase tracking-wider mb-1">Bowling</p>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-gray-900">{playerName(currentBowler)}</span>
+                {bowlerCard && (
+                  <span className="text-gray-500 ml-1">
+                    {bowlerCard.overs}.{bowlerCard.balls % 6}-{bowlerCard.runs}-{bowlerCard.wickets}
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-400 mt-0.5">Over {oversDisplay}</p>
+            </div>
+          </div>
+          {/* This over balls */}
+          <div className="flex gap-1.5 flex-wrap pt-1 border-t border-indigo-100">
+            {currentOverBalls.map((ball, i) => (
+              <span key={i}
+                className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${
+                  ball.isWicket ? 'bg-red-500 text-white' :
+                  !ball.isLegalDelivery ? 'bg-amber-400 text-amber-900' :
+                  ball.runs === 4 ? 'bg-blue-500 text-white' :
+                  ball.runs === 6 ? 'bg-purple-500 text-white' :
+                  ball.runs === 0 ? 'bg-gray-200 text-gray-600' :
+                  'bg-indigo-100 text-indigo-700'
+                }`}>
+                {ball.isWicket ? 'W' : !ball.isLegalDelivery ? (ball.extraType?.[0]?.toUpperCase() || 'E') : ball.runs}
+              </span>
+            ))}
+            {currentOverBalls.length === 0 && <span className="text-xs text-indigo-300">No balls bowled yet</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Extras run-selector modal */}
+      <AnimatePresence>
+        {showExtrasModal && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold text-amber-800">
+                {EXTRA_LABELS[showExtrasModal]} — How many extra runs?
+              </p>
+              <button onClick={() => setShowExtrasModal(null)}
+                className="text-amber-400 hover:text-amber-700 transition">
+                <FiX size={16} />
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {[0, 1, 2, 3, 4].map((r) => (
+                <button key={r} onClick={() => handleExtrasRun(r)}
+                  className={`py-3 rounded-xl text-base font-bold transition active:scale-95 shadow-sm
+                    ${r === 4 ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-amber-400 text-amber-900 hover:bg-amber-500'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-amber-600">
+              {showExtrasModal === 'wide' || showExtrasModal === 'no_ball'
+                ? '1 extra run is added automatically'
+                : 'These runs count as extras for the team'}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Shot area picker */}
       <AnimatePresence>
         {showShotArea && (
           <ShotAreaPicker
-            onSelect={(area) => submitBall(pendingRuns, area)}
+            onSelect={(area) => submitBall(pendingRuns, null, area)}
             onCancel={() => submitBall(pendingRuns)}
           />
         )}
       </AnimatePresence>
 
+      {/* Wicket dialog */}
       <AnimatePresence>
         {showWicket && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="bg-red-50 rounded-xl p-4 border border-red-200 space-y-3">
-            <p className="text-sm font-semibold text-red-700">ðŸŽ³ How Out?</p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            className="bg-red-50 rounded-2xl p-5 border border-red-200 space-y-4"
+          >
+            <p className="text-sm font-bold text-red-700 flex items-center gap-2">
+              <GiCricketBat size={15} /> How Out?
+            </p>
+
             <div className="grid grid-cols-3 gap-2">
               {WICKET_TYPES.map((wt) => (
                 <button key={wt.id} onClick={() => setWicketType(wt.id)}
-                  className={`py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
-                    wicketType === wt.id ? 'bg-red-500 text-white ring-2 ring-red-300' : 'bg-white text-gray-700 hover:bg-red-100 border border-red-200'
-                  }`}>{wt.icon} {wt.label}</button>
+                  className={`py-3 px-2 rounded-xl text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1.5 ${
+                    wicketType === wt.id
+                      ? 'bg-red-500 text-white ring-2 ring-red-300'
+                      : 'bg-white text-gray-700 hover:bg-red-100 border border-red-200'
+                  }`}>
+                  <wt.icon size={16} />
+                  {wt.label}
+                </button>
               ))}
             </div>
-            {(wicketType === 'caught' || wicketType === 'run_out' || wicketType === 'stumped') && (
-              <div>
-                <label className="text-xs font-medium text-red-600 mb-1 block">
-                  {wicketType === 'caught' ? 'Caught by' : wicketType === 'run_out' ? 'Run out by' : 'Stumped by'}
-                </label>
-                <select value={fielder} onChange={(e) => setFielder(e.target.value)}
-                  className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm">
-                  <option value="">Select player...</option>
-                  {bowlingPlayers.map((p) => (
-                    <option key={p._id} value={p._id}>{p.name}</option>
-                  ))}
-                </select>
+
+            {/* Fielder picker — native select replaced with CustomSelect */}
+            {(wicketType === 'caught' || wicketType === 'stumped') && (
+              <CustomSelect
+                value={fielder}
+                onChange={setFielder}
+                options={bowlingPlayers}
+                placeholder={wicketType === 'caught' ? 'Caught by...' : 'Stumped by...'}
+                disabled={[]}
+              />
+            )}
+
+            {wicketType === 'run_out' && (
+              <div className="space-y-2">
+                <CustomSelect
+                  value={fielder}
+                  onChange={setFielder}
+                  options={allPlayers.filter(p =>
+                    (match?.teams?.[bowlingTeamKey]?.players || []).some(bp => bp._id === p._id)
+                  )}
+                  placeholder="Run out by..."
+                  disabled={[]}
+                />
+                <div>
+                  <p className="text-xs font-medium text-red-600 mb-1.5">Runs scored on this ball</p>
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3].map(r => (
+                      <button key={r} onClick={() => setRunOutRuns(r)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+                          runOutRuns === r ? 'bg-red-500 text-white' : 'bg-white border border-red-200 text-gray-700 hover:bg-red-50'
+                        }`}>{r}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-            <div className="flex gap-2">
+
+            <div className="flex gap-2 pt-1">
               <button onClick={submitWicket} disabled={!wicketType}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold disabled:opacity-40 transition active:scale-95">Confirm Wicket</button>
-              <button onClick={() => { setShowWicket(false); setWicketType(''); }}
-                className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition">Cancel</button>
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-40 transition active:scale-95">
+                <FiCheck size={15} /> Confirm Wicket
+              </button>
+              <button onClick={() => { setShowWicket(false); setWicketType(''); setFielder(''); setRunOutRuns(0); }}
+                className="px-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition">
+                Cancel
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {!showWicket && !showShotArea && (
+      {!showWicket && !showShotArea && !showExtrasModal && (
         <>
+          {/* Run buttons */}
           <div>
             <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-widest">Runs</p>
             <div className="grid grid-cols-7 gap-2">
@@ -468,28 +774,39 @@ function CricketScorerPanel({ onEvent, match, score }) {
                   className={`py-3.5 rounded-xl text-lg font-bold transition-all active:scale-95 shadow-sm ${
                     r === 4 ? 'bg-blue-500 hover:bg-blue-600 text-white' :
                     r === 6 ? 'bg-purple-500 hover:bg-purple-600 text-white' :
-                    'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>{r}</button>
+                    'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}>{r}</button>
               ))}
             </div>
           </div>
+
+          {/* Extras */}
           <div>
             <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-widest">Extras</p>
-            <div className="flex gap-2 flex-wrap">
-              {['wide', 'no_ball', 'bye', 'leg_bye'].map((e) => (
-                <button key={e} onClick={() => setExtras(extras === e ? null : e)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                    extras === e ? 'bg-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}>{e.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</button>
+            <div className="grid grid-cols-4 gap-2">
+              {(['wide', 'no_ball', 'bye', 'leg_bye'] ).map((e) => (
+                <button key={e} onClick={() => setShowExtrasModal(e)}
+                  className="py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-amber-100 hover:text-amber-800 transition active:scale-95 border border-gray-200">
+                  {EXTRA_LABELS[e]}
+                </button>
               ))}
             </div>
           </div>
+
+          {/* Actions */}
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowWicket(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-red-500 text-white hover:bg-red-600 transition active:scale-95">ðŸŽ³ Wicket</button>
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-red-500 text-white hover:bg-red-600 transition active:scale-95">
+              <GiCricketBat size={15} /> Wicket
+            </button>
             <button onClick={() => onEvent({ type: 'end_over' })}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition active:scale-95">End Over</button>
+              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition active:scale-95">
+              End Over
+            </button>
             <button onClick={() => onEvent({ type: 'end_innings' })}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95">End Innings</button>
+              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95">
+              End Innings
+            </button>
           </div>
         </>
       )}
@@ -497,9 +814,7 @@ function CricketScorerPanel({ onEvent, match, score }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   OTHER SPORT SCORER PANELS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* OTHER SPORT SCORER PANELS */
 
 function FootballScorerPanel({ onEvent, match }) {
   return (
@@ -509,11 +824,11 @@ function FootballScorerPanel({ onEvent, match }) {
           <div key={team} className="space-y-2">
             <p className="text-xs font-semibold text-gray-500 text-center">{match?.teams?.[team]?.name || team}</p>
             <button onClick={() => onEvent({ type: 'goal', team, data: {} })}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition active:scale-95">âš½ Goal</button>
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition active:scale-95 flex items-center justify-center gap-2"><GiSoccerBall size={16} /> Goal</button>
             <button onClick={() => onEvent({ type: 'yellow_card', team, data: {} })}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-2.5 rounded-xl text-xs font-bold transition active:scale-95">ðŸŸ¨ Yellow</button>
+              className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1"><FiAlertTriangle size={13} /> Yellow</button>
             <button onClick={() => onEvent({ type: 'red_card', team, data: {} })}
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold transition active:scale-95">ðŸŸ¥ Red</button>
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1"><FiSquare size={13} /> Red</button>
           </div>
         ))}
       </div>
@@ -563,9 +878,7 @@ function GenericScorerPanel({ onEvent, match }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SCORECARD
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* SCORECARD */
 
 function CricketScorecard({ score, match }) {
   const innings = score?.currentInningsData;
@@ -576,7 +889,7 @@ function CricketScorecard({ score, match }) {
   const playerName = (id) => {
     const all = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
     const p = all.find(x => (x._id || x) === id || (x._id || x)?.toString?.() === id?.toString?.());
-    return p?.name || id?.toString?.()?.slice(-6) || 'â€”';
+    return p?.name || id?.toString?.()?.slice(-6) || '-';
   };
 
   return (
@@ -684,9 +997,7 @@ function GenericScorecard({ score, match, sport }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   COMMENTARY FEED
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* COMMENTARY FEED */
 
 function CommentaryFeed({ matchId, commentary: initial }) {
   const [commentary, setCommentary] = useState(initial || []);
@@ -726,9 +1037,7 @@ function CommentaryFeed({ matchId, commentary: initial }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MATCH INFO TAB
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* MATCH INFO TAB */
 
 function MatchInfo({ match }) {
   const homeName = match?.teams?.home?.name || 'Home';
@@ -738,7 +1047,7 @@ function MatchInfo({ match }) {
     <div className="space-y-4">
       {match?.toss?.wonBy && (
         <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <p className="text-sm font-semibold text-amber-800">ðŸª™ Toss</p>
+          <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5"><GiCoins size={15} /> Toss</p>
           <p className="text-sm text-amber-700 mt-1">
             {match.toss.wonBy === 'home' ? homeName : awayName} won the toss and chose to{' '}
             <span className="font-bold">{match.toss.decision}</span> first
@@ -759,7 +1068,7 @@ function MatchInfo({ match }) {
         </div>
       ))}
       <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-2 text-sm">
-        {match?.venue?.name && <div className="flex justify-between"><span className="text-gray-500">Venue</span><span className="font-medium text-gray-800">ðŸ“ {match.venue.name}</span></div>}
+        {match?.venue?.name && <div className="flex justify-between"><span className="text-gray-500">Venue</span><span className="font-medium text-gray-800 flex items-center gap-1"><FiMapPin size={12} />{match.venue.name}</span></div>}
         {match?.sport && <div className="flex justify-between"><span className="text-gray-500">Sport</span><span className="font-medium text-gray-800 capitalize">{match.sport.replace('_', ' ')}</span></div>}
         {match?.format?.overs && <div className="flex justify-between"><span className="text-gray-500">Format</span><span className="font-medium text-gray-800">{match.format.overs} overs</span></div>}
         {match?.scheduledAt && <div className="flex justify-between"><span className="text-gray-500">Scheduled</span><span className="font-medium text-gray-800">{new Date(match.scheduledAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>}
@@ -769,9 +1078,7 @@ function MatchInfo({ match }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MAIN LIVE SCORING PAGE
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* MAIN LIVE SCORING PAGE */
 
 export default function LiveScoring() {
   const { matchId } = useParams();
@@ -807,7 +1114,8 @@ export default function LiveScoring() {
         else if (m.status === 'live') {
           const sc = payload.score;
           const innings = sc?.currentInningsData;
-          if (!innings?.battingTeam && !innings?.batsmen?.striker) setMatchPhase('player_select');
+          // Only check battingTeam — striker can be null mid-innings after wicket
+          if (!innings?.battingTeam) setMatchPhase('player_select');
           else setMatchPhase('scoring');
         } else if (m.status === 'scheduled') {
           if (m.toss?.wonBy && m.toss?.decision) setMatchPhase('player_select');
@@ -919,7 +1227,7 @@ export default function LiveScoring() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-        <p className="text-gray-400 text-sm">Loading matchâ€¦</p>
+        <p className="text-gray-400 text-sm">Loading match...</p>
       </div>
     );
   }
@@ -927,9 +1235,9 @@ export default function LiveScoring() {
   if (error && !match) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-3xl">âš ï¸</div>
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center"><FiAlertTriangle size={28} className="text-red-500" /></div>
         <p className="text-red-600 font-medium">{error}</p>
-        <button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition text-sm font-medium">â† Go Back</button>
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition text-sm font-medium"><FiArrowLeft size={16} /> Back</button>
       </div>
     );
   }
@@ -944,21 +1252,32 @@ export default function LiveScoring() {
   const getHeaderScore = () => {
     if (!score) return null;
     if (match.sport === 'cricket' && innings) {
+      const homeInn = innings.battingTeam === 'home' ? innings : score.innings?.find(i => i.battingTeam === 'home');
+      const awayInn = innings.battingTeam === 'away' ? innings : score.innings?.find(i => i.battingTeam === 'away');
       return {
-        home: innings.battingTeam === 'home' ? `${innings.runs}/${innings.wickets}` : (score.innings?.[0]?.runs !== undefined ? `${score.innings[0].runs}/${score.innings[0].wickets}` : 'â€”'),
-        away: innings.battingTeam === 'away' ? `${innings.runs}/${innings.wickets}` : (score.innings?.[0]?.runs !== undefined ? `${score.innings[0].runs}/${score.innings[0].wickets}` : 'â€”'),
+        home: homeInn ? `${homeInn.runs}/${homeInn.wickets}` : '-',
+        away: awayInn ? `${awayInn.runs}/${awayInn.wickets}` : '-',
         overs: `${Math.floor((innings.totalBalls || 0) / 6)}.${(innings.totalBalls || 0) % 6} ov`,
       };
     }
-    return null;
+    if (match.sport === 'football') {
+      return { home: String(score.home?.goals ?? 0), away: String(score.away?.goals ?? 0) };
+    }
+    if (match.sport === 'basketball') {
+      return { home: String(score.home?.points ?? 0), away: String(score.away?.points ?? 0) };
+    }
+    return {
+      home: String(score.home?.points ?? score.home?.score ?? 0),
+      away: String(score.away?.points ?? score.away?.score ?? 0),
+    };
   };
   const headerScore = getHeaderScore();
 
   const TABS = [
-    { id: 'live', label: 'Live', icon: 'ðŸ“º' },
-    { id: 'scorecard', label: 'Scorecard', icon: 'ðŸ“Š' },
-    { id: 'commentary', label: 'Commentary', icon: 'ðŸŽ™ï¸' },
-    { id: 'info', label: 'Info', icon: 'â„¹ï¸' },
+    { id: 'live',       label: 'Live',        icon: FiRadio },
+    { id: 'scorecard',  label: 'Scorecard',   icon: FiBarChart2 },
+    { id: 'commentary', label: 'Commentary',  icon: FiMic },
+    { id: 'info',       label: 'Info',        icon: FiInfo },
   ];
 
   const getScorerPanel = () => {
@@ -984,7 +1303,7 @@ export default function LiveScoring() {
       <div className={`bg-gradient-to-br ${meta.color} rounded-2xl p-5 text-white shadow-lg relative overflow-hidden`}>
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
         <div className="flex items-center justify-between mb-3 relative z-10">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm">â† Back</button>
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition"><FiArrowLeft size={18} /></button>
           <div className="flex items-center gap-2">
             {match.status === 'live' && (
               <span className="flex items-center gap-1.5 text-xs font-semibold bg-red-500 px-3 py-1 rounded-full animate-pulse">
@@ -998,15 +1317,15 @@ export default function LiveScoring() {
         <div className="flex items-center justify-between relative z-10">
           <div className="flex-1 text-center">
             <p className="text-white/60 text-xs mb-1">{teamAName}</p>
-            <p className="text-3xl font-black">{headerScore?.home || 'â€”'}</p>
+            <p className="text-3xl font-black">{headerScore?.home || '-'}</p>
           </div>
           <div className="px-4">
-            <div className="text-3xl">{meta.icon}</div>
+            <div className="flex justify-center"><meta.icon size={36} /></div>
             {headerScore?.overs && <p className="text-white/50 text-xs text-center mt-1">{headerScore.overs}</p>}
           </div>
           <div className="flex-1 text-center">
             <p className="text-white/60 text-xs mb-1">{teamBName}</p>
-            <p className="text-3xl font-black">{headerScore?.away || 'â€”'}</p>
+            <p className="text-3xl font-black">{headerScore?.away || '-'}</p>
           </div>
         </div>
         {innings?.target && (
@@ -1027,7 +1346,7 @@ export default function LiveScoring() {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex justify-between items-center">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-700 ml-2 font-bold">âœ•</button>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-700 ml-2 font-bold"><FiX size={14} /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1043,7 +1362,7 @@ export default function LiveScoring() {
       {/* Non-cricket: skip player selection */}
       {matchPhase === 'player_select' && isScorer && match.sport !== 'cricket' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center space-y-4">
-          <div className="text-4xl">{meta.icon}</div>
+          <div className="flex justify-center"><meta.icon size={44} /></div>
           <h3 className="text-lg font-bold text-gray-900">Ready to start?</h3>
           <button onClick={async () => {
             if (match.status === 'scheduled') await api.post(`/scoring/${matchId}/start`);
@@ -1052,7 +1371,7 @@ export default function LiveScoring() {
             setScore(data.data?.score);
             setMatchPhase('scoring');
           }} className="px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition active:scale-95">
-            Start Scoring â–¶ï¸
+            <FiPlay size={15} className="mr-1" /> Start Scoring
           </button>
         </div>
       )}
@@ -1060,7 +1379,7 @@ export default function LiveScoring() {
       {/* Waiting screen for non-scorers */}
       {match.status === 'scheduled' && !isScorer && (
         <div className="bg-gray-50 rounded-2xl p-8 text-center">
-          <div className="text-4xl mb-3">{meta.icon}</div>
+          <div className="flex justify-center mb-3"><meta.icon size={44} /></div>
           <h3 className="text-lg font-bold text-gray-900">Match Not Started</h3>
           <p className="text-sm text-gray-500 mt-1">Waiting for the scorer to start this match</p>
         </div>
@@ -1075,7 +1394,7 @@ export default function LiveScoring() {
                 className={`flex-1 py-3 text-xs font-semibold transition-all ${
                   activeTab === tab.id ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'
                 }`}>
-                <span className="mr-1">{tab.icon}</span> {tab.label}
+                <tab.icon size={14} className="mr-1 inline" /> {tab.label}
               </button>
             ))}
           </div>
@@ -1087,17 +1406,16 @@ export default function LiveScoring() {
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
                       <div className="flex items-center gap-2">
-                        <span>{meta.icon}</span>
+                        <meta.icon size={16} />
                         <span className="text-sm font-semibold text-gray-700">Scorer Panel</span>
                       </div>
                       <button onClick={handleUndo} disabled={events.length === 0}
-                        className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 disabled:opacity-30 transition">â†© Undo</button>
+                        className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 disabled:opacity-30 transition"><FiRotateCcw size={13} /> Undo</button>
                     </div>
                     <div className={`p-5 ${submitting ? 'opacity-50 pointer-events-none' : ''}`}>
                       {submitting && (
                         <div className="flex items-center justify-center gap-2 mb-3 text-xs text-indigo-500">
-                          <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> Savingâ€¦
-                        </div>
+                          <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> Saving...</div>
                       )}
                       {getScorerPanel()}
                     </div>
@@ -1105,17 +1423,17 @@ export default function LiveScoring() {
                 )}
                 {match.status === 'live' && !isScorer && (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
-                    <p className="text-gray-500 text-sm">ðŸ“º Watching live â€” only authorized scorers can update the score</p>
+                    <p className="text-gray-500 text-sm flex items-center justify-center gap-1.5"><FiTv size={15} /> Watching live – only authorized scorers can update the score</p>
                   </div>
                 )}
                 {match.status === 'live' && isScorer && (
                   <button onClick={handleEndMatch}
-                    className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition active:scale-95">ðŸ End Match</button>
+                    className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2"><FiFlag size={15} /> End Match</button>
                 )}
                 {commentary.length > 0 && (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-                      <p className="text-sm font-semibold text-gray-700">ðŸŽ™ï¸ Latest</p>
+                      <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FiMic size={14} /> Latest</p>
                     </div>
                     <div className="p-4 space-y-2">
                       {[...commentary].reverse().slice(0, 5).map((c, i) => (
@@ -1154,3 +1472,6 @@ export default function LiveScoring() {
     </motion.div>
   );
 }
+
+
+

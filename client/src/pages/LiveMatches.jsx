@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { SportIcon } from '../utils/sportIcons';
 import { Link } from 'react-router-dom';
 import { FiTv, FiMapPin, FiClock } from 'react-icons/fi';
 import api from '../lib/api';
 
-const SPORT_EMOJI = {
-  cricket: '🏏', football: '⚽', basketball: '🏀',
-  tennis: '🎾', badminton: '🏸', volleyball: '🏐', table_tennis: '🏓',
-};
+// sport icons handled by SportIcon component
 
 function LiveBadge() {
   return (
@@ -57,7 +55,7 @@ export default function LiveMatches() {
       {/* Empty state */}
       {!isLoading && (!data || data.length === 0) && (
         <div className="text-center py-20">
-          <div className="text-5xl mb-4">📺</div>
+          <div className="flex justify-center mb-4"><FiTv size={52} className="text-gray-300" /></div>
           <h3 className="text-lg font-semibold text-gray-700">No live matches right now</h3>
           <p className="text-gray-400 text-sm mt-1">Check back soon or start a match to score live.</p>
           <Link to="/activities" className="mt-6 inline-flex btn-primary text-sm">
@@ -81,7 +79,9 @@ export default function LiveMatches() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{SPORT_EMOJI[match.sport] || '🏅'}</span>
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <SportIcon sport={match.sport} size={18} className="text-gray-600" />
+                    </div>
                     <span className="text-xs font-medium text-gray-500 capitalize">{match.sport}</span>
                   </div>
                   <LiveBadge />

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FiMapPin, FiUsers, FiTv, FiAward, FiArrowRight, FiChevronRight, FiStar, FiCalendar, FiCheck } from 'react-icons/fi';
 import api from '../lib/api';
+import { SportIcon } from '../utils/sportIcons';
 import { getVenueImageUrl } from '../utils';
 
 const features = [
@@ -13,13 +14,13 @@ const features = [
 ];
 
 const sports = [
-  { emoji: '🏏', name: 'Cricket', color: 'bg-green-50 hover:bg-green-100', players: '22K+' },
-  { emoji: '⚽', name: 'Football', color: 'bg-emerald-50 hover:bg-emerald-100', players: '18K+' },
-  { emoji: '🏀', name: 'Basketball', color: 'bg-orange-50 hover:bg-orange-100', players: '12K+' },
-  { emoji: '🎾', name: 'Tennis', color: 'bg-lime-50 hover:bg-lime-100', players: '8K+' },
-  { emoji: '🏸', name: 'Badminton', color: 'bg-blue-50 hover:bg-blue-100', players: '15K+' },
-  { emoji: '🏐', name: 'Volleyball', color: 'bg-yellow-50 hover:bg-yellow-100', players: '6K+' },
-  { emoji: '🏓', name: 'Table Tennis', color: 'bg-red-50 hover:bg-red-100', players: '5K+' },
+  { sport: 'cricket',      name: 'Cricket',      color: 'bg-green-50 hover:bg-green-100',    players: '22K+' },
+  { sport: 'football',     name: 'Football',     color: 'bg-emerald-50 hover:bg-emerald-100', players: '18K+' },
+  { sport: 'basketball',   name: 'Basketball',   color: 'bg-orange-50 hover:bg-orange-100',   players: '12K+' },
+  { sport: 'tennis',       name: 'Tennis',       color: 'bg-lime-50 hover:bg-lime-100',       players: '8K+' },
+  { sport: 'badminton',    name: 'Badminton',    color: 'bg-blue-50 hover:bg-blue-100',       players: '15K+' },
+  { sport: 'volleyball',   name: 'Volleyball',   color: 'bg-yellow-50 hover:bg-yellow-100',   players: '6K+' },
+  { sport: 'table_tennis', name: 'Table Tennis', color: 'bg-red-50 hover:bg-red-100',         players: '5K+' },
 ];
 
 const steps = [
@@ -116,7 +117,7 @@ export default function Home() {
                 to={`/venues?sport=${sport.name.toLowerCase().replace(' ', '_')}`}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl ${sport.color} transition-all duration-300 group`}
               >
-                <span className="text-3xl group-hover:scale-110 transition-transform duration-200">{sport.emoji}</span>
+                <span className="group-hover:scale-110 transition-transform duration-200 flex items-center justify-center"><SportIcon sport={sport.sport} size={32} className="text-gray-600 group-hover:text-gray-800 transition-colors" /></span>
                 <span className="text-sm font-medium text-gray-700">{sport.name}</span>
                 <span className="text-xs text-gray-400">{sport.players}</span>
               </Link>
@@ -295,22 +296,22 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 text-center">
-                <span className="text-4xl">🏏</span>
+                <div className="flex justify-center"><SportIcon sport="cricket" size={36} /></div>
                 <p className="text-sm font-medium text-gray-700 mt-3">Cricket Grounds</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">150+</p>
               </div>
               <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 text-center mt-6">
-                <span className="text-4xl">⚽</span>
+                <div className="flex justify-center"><SportIcon sport="football" size={36} /></div>
                 <p className="text-sm font-medium text-gray-700 mt-3">Football Turfs</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">120+</p>
               </div>
               <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 text-center -mt-2">
-                <span className="text-4xl">🏸</span>
+                <div className="flex justify-center"><SportIcon sport="badminton" size={36} /></div>
                 <p className="text-sm font-medium text-gray-700 mt-3">Badminton Courts</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">200+</p>
               </div>
               <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 text-center mt-4">
-                <span className="text-4xl">🎾</span>
+                <div className="flex justify-center"><SportIcon sport="tennis" size={36} /></div>
                 <p className="text-sm font-medium text-gray-700 mt-3">Tennis Courts</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">50+</p>
               </div>

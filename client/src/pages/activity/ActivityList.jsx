@@ -32,7 +32,7 @@ export default function ActivityList() {
       {isLoading ? (
         <LoadingSpinner className="py-20" />
       ) : !data?.length ? (
-        <EmptyState icon="🏃" title="No activities" description="No activities found. Create one!" />
+        <EmptyState icon="<FiActivity size={18} className="inline" />" title="No activities" description="No activities found. Create one!" />
       ) : (
         <div className="space-y-3">{data.map((a) => <ActivityCard key={a._id} activity={a} />)}</div>
       )}

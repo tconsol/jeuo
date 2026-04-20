@@ -1,9 +1,9 @@
 import { Outlet, Link } from 'react-router-dom';
 
 const SPORT_IMAGES = [
-  'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=900&q=80', // cricket
-  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=900&q=80', // football
-  'https://images.unsplash.com/photo-1546519638405-a9f2a3f8e521?w=900&q=80', // basketball
+  'https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg', // cricket batter
+  'https://images.pexels.com/photos/3727464/pexels-photo-3727464.jpeg', // football player
+  'https://images.pexels.com/photos/3808013/pexels-photo-3808013.jpeg', // basketball player
 ];
 
 const QUOTES = [

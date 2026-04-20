@@ -19,7 +19,7 @@ export default function TournamentList() {
       {isLoading ? (
         <LoadingSpinner className="py-20" />
       ) : !data?.length ? (
-        <EmptyState icon="🏆" title="No tournaments" description="Tournaments will appear here." />
+        <EmptyState icon="<FiAward size={18} className="inline" />" title="No tournaments" description="Tournaments will appear here." />
       ) : (
         <div className="space-y-3">{data.map((t) => <TournamentCard key={t._id} tournament={t} />)}</div>
       )}

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { SportIcon } from '../utils/sportIcons';
+import { FiGrid, FiAward, FiTarget, FiUser } from 'react-icons/fi';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
@@ -12,7 +14,7 @@ const SKILL_STYLES = {
   pro:          'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
 };
 
-const SPORT_EMOJI = { cricket: '🏏', football: '⚽', basketball: '🏀', tennis: '🎾', badminton: '🏸', volleyball: '🏐', default: '🏓' };
+// sport icons via SportIcon component
 
 const GRADIENT_PAIRS = [
   'from-primary-400 to-primary-600',
@@ -62,7 +64,7 @@ export default function Profile() {
   if (!profile) {
     return (
       <div className="text-center py-20 text-gray-500">
-        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">👤</div>
+        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><FiUser size={32} className="text-gray-400" /></div>
         User not found
       </div>
     );
@@ -86,7 +88,7 @@ export default function Profile() {
         {/* Cover banner */}
         <div className={`h-24 bg-gradient-to-br ${grad} relative`}>
           <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-2 right-4 text-4xl">🏟️</div>
+            
           </div>
         </div>
 
@@ -125,12 +127,12 @@ export default function Profile() {
       {stats && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Matches', value: stats.matchesPlayed || 0, color: 'text-primary-600', bg: 'bg-primary-50', emoji: '🏟️' },
-            { label: 'Wins', value: stats.wins || 0, color: 'text-amber-600', bg: 'bg-amber-50', emoji: '🏆' },
-            { label: 'Tournaments', value: stats.tournaments || 0, color: 'text-violet-600', bg: 'bg-violet-50', emoji: '🎯' },
+            { label: 'Matches',     value: stats.matchesPlayed || 0, color: 'text-primary-600', bg: 'bg-primary-50',  Icon: FiGrid },
+            { label: 'Wins',        value: stats.wins || 0,          color: 'text-amber-600',   bg: 'bg-amber-50',    Icon: FiAward },
+            { label: 'Tournaments', value: stats.tournaments || 0,   color: 'text-violet-600',  bg: 'bg-violet-50',   Icon: FiTarget },
           ].map((s) => (
             <div key={s.label} className={`${s.bg} rounded-2xl p-4 text-center border border-white`}>
-              <p className="text-2xl mb-1">{s.emoji}</p>
+              <p className="flex justify-center mb-1"><s.Icon size={20} className={s.color} /></p>
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
             </div>

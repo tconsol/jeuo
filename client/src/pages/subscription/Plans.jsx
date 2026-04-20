@@ -117,13 +117,13 @@ export default function Plans() {
               <ul className="space-y-3 mb-6">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
-                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span className="text-green-500 mt-0.5"><FiCheck size={14} className="inline" /></span>
                     <span className="text-gray-700">{f}</span>
                   </li>
                 ))}
                 {plan.limits.map((l) => (
                   <li key={l} className="flex items-start gap-2 text-sm">
-                    <span className="text-red-400 mt-0.5">✗</span>
+                    <span className="text-red-400 mt-0.5"><FiX size={14} className="inline" /></span>
                     <span className="text-gray-400">{l}</span>
                   </li>
                 ))}

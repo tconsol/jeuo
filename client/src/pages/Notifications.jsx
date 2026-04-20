@@ -1,17 +1,18 @@
 import { useEffect } from 'react';
+import { FiCalendar, FiXCircle, FiAward, FiZap, FiClock, FiCreditCard, FiBell } from 'react-icons/fi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { notificationSocket } from '../lib/socket';
 import api from '../lib/api';
 
 const TYPE_STYLES = {
-  booking_confirmed:  { bg: 'bg-emerald-50', icon: '📅', color: 'text-emerald-600' },
-  booking_cancelled:  { bg: 'bg-red-50',     icon: '❌', color: 'text-red-500' },
-  match_result:       { bg: 'bg-amber-50',   icon: '🏆', color: 'text-amber-600' },
-  tournament_update:  { bg: 'bg-violet-50',  icon: '🏟️', color: 'text-violet-600' },
-  activity_reminder:  { bg: 'bg-blue-50',    icon: '⏰', color: 'text-blue-600' },
-  payment:            { bg: 'bg-green-50',   icon: '💳', color: 'text-green-600' },
-  default:            { bg: 'bg-gray-50',    icon: '🔔', color: 'text-gray-500' },
+  booking_confirmed:  { bg: 'bg-emerald-50', icon: FiCalendar,   color: 'text-emerald-600' },
+  booking_cancelled:  { bg: 'bg-red-50',     icon: FiXCircle,    color: 'text-red-500' },
+  match_result:       { bg: 'bg-amber-50',   icon: FiAward,      color: 'text-amber-600' },
+  tournament_update:  { bg: 'bg-violet-50',  icon: FiZap,        color: 'text-violet-600' },
+  activity_reminder:  { bg: 'bg-blue-50',    icon: FiClock,      color: 'text-blue-600' },
+  payment:            { bg: 'bg-green-50',   icon: FiCreditCard, color: 'text-green-600' },
+  default:            { bg: 'bg-gray-50',    icon: FiBell,       color: 'text-gray-500' },
 };
 
 export default function Notifications() {
@@ -73,8 +74,8 @@ export default function Notifications() {
         </div>
       ) : notifications.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
-            🔔
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FiBell size={28} className="text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900">No notifications</h3>
           <p className="text-gray-500 mt-2">You're all caught up!</p>
@@ -99,7 +100,7 @@ export default function Notifications() {
                 >
                   {/* Icon */}
                   <div className={`w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center flex-shrink-0 text-lg`}>
-                    {style.icon}
+                    {(() => { const Icon = style.icon; return <Icon size={18} className={style.color} />; })()}
                   </div>
 
                   <div className="flex-1 min-w-0">

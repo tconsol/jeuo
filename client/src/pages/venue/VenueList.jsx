@@ -26,7 +26,7 @@ export default function VenueList() {
       {isLoading ? (
         <LoadingSpinner className="py-20" />
       ) : !data?.length ? (
-        <EmptyState icon="🏟️" title="No venues found" description="Try a different search or location." />
+        <EmptyState icon="<FiGrid size={18} className="inline" />️" title="No venues found" description="Try a different search or location." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{data.map((v) => <VenueCard key={v._id} venue={v} />)}</div>
       )}
