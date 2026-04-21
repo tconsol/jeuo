@@ -26,13 +26,22 @@ const app = express();
 
 // Security
 app.use(helmet());
+
+// Parse CORS origins from environment variable or use defaults
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      'http://localhost:5173', // client
+      'http://localhost:5174', // owner
+      'http://localhost:5175', // admin
+    ];
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // client
-    'http://localhost:5174', // owner
-    'http://localhost:5175', // admin
-  ],
+  origin: corsOrigins,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
 }));
 
 // Rate limiting
