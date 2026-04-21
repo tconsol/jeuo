@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -507,7 +508,7 @@ function ShotAreaPicker({ onSelect, onCancel }) {
 
 /* CRICKET SCORER PANEL */
 
-function CricketScorerPanel({ onEvent, match, score }) {
+function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
   const [showWicket, setShowWicket] = useState(false);
   const [showShotArea, setShowShotArea] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(null); // 'wide'|'no_ball'|'bye'|'leg_bye'
@@ -517,6 +518,21 @@ function CricketScorerPanel({ onEvent, match, score }) {
   const [runOutRuns, setRunOutRuns] = useState(0);
   const [showNextBowler, setShowNextBowler] = useState(false);
   const [nextBowler, setNextBowler] = useState('');
+
+  // Reset all modal states when undo is triggered
+  useEffect(() => {
+    if (undoSignal > 0) {
+      setShowWicket(false);
+      setShowShotArea(false);
+      setShowExtrasModal(null);
+      setPendingRuns(null);
+      setWicketType('');
+      setFielder('');
+      setRunOutRuns(0);
+      setShowNextBowler(false);
+      setNextBowler('');
+    }
+  }, [undoSignal]);
 
   const innings = score?.currentInningsData;
   const bowlingTeamKey = innings?.bowlingTeam || 'away';
@@ -1064,9 +1080,9 @@ function CricketScorecard({ score, match }) {
                       {Object.entries(inn.bowlingCard).map(([pid, card]) => (
                         <tr key={pid} className="border-b border-gray-100">
                           <td className="py-2.5 pl-4 pr-2 font-medium text-gray-900">{pn(pid)}</td>
-                          <td className="text-right px-2">{card.overs}.{card.balls % 6}</td>
-                          <td className="text-right px-2 text-gray-500">{card.maidens}</td>
-                          <td className="text-right px-2">{card.runs}</td>
+                          <td className="text-right px-2 font-bold text-gray-900">{card.overs}.{card.balls % 6}</td>
+                          <td className="text-right px-2 font-bold text-gray-900">{card.maidens}</td>
+                          <td className="text-right px-2 font-bold text-gray-900">{card.runs}</td>
                           <td className="text-right px-2 font-bold text-red-600">{card.wickets}</td>
                           <td className="text-right pr-4 pl-2 text-gray-500">{card.economy?.toFixed?.(2) || card.economy}</td>
                         </tr>
@@ -1440,9 +1456,9 @@ function LiveBattingSummary({ score, match }) {
             <tbody>
               <tr>
                 <td className="py-1 font-bold text-gray-900">{pn(bowler)}</td>
-                <td className="text-right px-1">{bCard.overs}.{bCard.balls % 6}</td>
-                <td className="text-right px-1 text-gray-500">{bCard.maidens}</td>
-                <td className="text-right px-1">{bCard.runs}</td>
+                <td className="text-right px-1 font-bold text-gray-900">{bCard.overs}.{bCard.balls % 6}</td>
+                <td className="text-right px-1 font-bold text-gray-900">{bCard.maidens}</td>
+                <td className="text-right px-1 font-bold text-gray-900">{bCard.runs}</td>
                 <td className="text-right px-1 font-bold text-red-600">{bCard.wickets}</td>
                 <td className="text-right text-gray-500">{bCard.economy?.toFixed?.(2) || bCard.economy}</td>
               </tr>
@@ -1558,7 +1574,8 @@ export default function LiveScoring() {
     const onScoreUpdate = (data) => {
       if (data.score) setScore(data.score);
       if (data.event) setEvents((prev) => [...prev, data.event]);
-      if (data.commentary) setCommentary(data.commentary);
+      // commentary is always replaced (handles both new entries and undo removal)
+      if (data.commentary !== undefined) setCommentary(data.commentary);
     };
     matchSocket.on('score:update', onScoreUpdate);
     return () => {
@@ -1595,17 +1612,112 @@ export default function LiveScoring() {
     }
   }, [matchId]);
 
+  const [undoSignal, setUndoSignal] = useState(0);
+  const [showUndoConfirm, setShowUndoConfirm] = useState(false);
+  const [pendingUndoEvent, setPendingUndoEvent] = useState(null);
+
+  // Helper to format event details for display
+  const formatEventDetails = (event) => {
+    if (!event) return 'Unknown event';
+    const allPlayers = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
+    const pn = (id) => {
+      if (!id) return null;
+      const p = allPlayers.find(x => (x._id || x)?.toString() === id?.toString());
+      return p?.name;
+    };
+
+    const innings = score?.currentInningsData;
+    const currentStriker = pn(innings?.batsmen?.striker);
+    const currentBowler = pn(innings?.currentBowler);
+    
+    // Get over/ball from event payload or derive from score
+    let overNum = event.payload?.overNumber;
+    let ballNum = event.payload?.ballInOver;
+    
+    // If not in payload, try to calculate from score (current over/balls represent state AFTER event)
+    if (!overNum && innings) {
+      overNum = Math.floor((innings.totalBalls - 1) / 6) + 1;
+      ballNum = ((innings.totalBalls - 1) % 6) + 1;
+    }
+    
+    overNum = overNum ?? '?';
+    ballNum = ballNum ?? '?';
+
+    switch (event.type) {
+      case 'delivery': {
+        const runs = event.payload?.runs ?? 0;
+        const isExtra = event.payload?.isExtra;
+        const extraType = event.payload?.extraType;
+        
+        let desc = `Over ${overNum}, Ball ${ballNum}: `;
+        
+        if (isExtra) {
+          desc += `${extraType?.toUpperCase() || 'EXTRA'}`;
+          if (event.payload?.extraRuns) desc += ` +${event.payload.extraRuns}`;
+        } else {
+          if (runs === 0) desc += 'Dot ball';
+          else if (runs === 1) desc += '1 run';
+          else if (runs === 4) desc += '4 RUNS';
+          else if (runs === 6) desc += '6 RUNS';
+          else desc += `${runs} runs`;
+        }
+        
+        if (currentStriker || currentBowler) {
+          desc += ` | ${currentStriker || 'Striker'}* vs ${currentBowler || 'Bowler'}`;
+        }
+        
+        return desc;
+      }
+      case 'wicket': {
+        const howOut = event.payload?.wicketType?.replace('_', ' ').toUpperCase();
+        return `WICKET! Over ${overNum} - ${howOut}${currentBowler ? ` (${currentBowler})` : ''}`;
+      }
+      case 'end_over':
+        return `Over ${event.payload?.overNumber || overNum} completed`;
+      default:
+        return `${event.type} event`;
+    }
+  };
+
   const handleUndo = useCallback(async () => {
     try {
+      // Show modal with last event details
+      if (events.length === 0) {
+        setError('No events to undo');
+        return;
+      }
+      const lastEvent = events[events.length - 1];
+      setPendingUndoEvent(lastEvent);
+      setShowUndoConfirm(true);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch last event');
+    }
+  }, [events]);
+
+  const confirmUndo = useCallback(async () => {
+    try {
       const { data } = await api.post(`/scoring/${matchId}/undo`);
-      if (data.data?.score) setScore(data.data.score);
-      // Refresh full data
-      const { data: freshData } = await api.get(`/scoring/${matchId}`);
-      const fresh = freshData.data || freshData;
-      if (fresh.score) setScore(fresh.score);
-      if (fresh.match?.commentary) setCommentary(fresh.match.commentary);
+      const result = data.data;
+      if (result?.score) setScore(result.score);
+      // Use commentary directly from undo response if present
+      if (result?.commentary) setCommentary(result.commentary);
+      // Signal CricketScorerPanel to reset all modal states
+      setUndoSignal(prev => prev + 1);
+      setShowUndoConfirm(false);
+      setPendingUndoEvent(null);
+      // Also refresh full data to ensure consistency
+      try {
+        const { data: freshData } = await api.get(`/scoring/${matchId}`);
+        const fresh = freshData.data || freshData;
+        if (fresh.score) setScore(fresh.score);
+        if (fresh.match) {
+          setMatch(fresh.match);
+          setCommentary(fresh.match.commentary || []);
+        }
+      } catch { /* use inline response */ }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to undo');
+      setShowUndoConfirm(false);
     }
   }, [matchId]);
 
@@ -1716,7 +1828,7 @@ export default function LiveScoring() {
 
   const getScorerPanel = () => {
     switch (match.sport) {
-      case 'cricket': return <CricketScorerPanel onEvent={handleEvent} match={match} score={score} />;
+      case 'cricket': return <CricketScorerPanel onEvent={handleEvent} match={match} score={score} undoSignal={undoSignal} />;
       case 'football': return <FootballScorerPanel onEvent={handleEvent} match={match} />;
       case 'basketball': return <BasketballScorerPanel onEvent={handleEvent} match={match} />;
       default: return <GenericScorerPanel onEvent={handleEvent} match={match} />;
@@ -1724,6 +1836,7 @@ export default function LiveScoring() {
   };
 
   return (
+    <>
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
       className="max-w-4xl mx-auto pt-4 pb-28 space-y-4 px-4">
 
@@ -1906,7 +2019,86 @@ export default function LiveScoring() {
           </AnimatePresence>
         </>
       )}
+
+      {/* Undo Confirmation Modal - rendered via portal to escape motion.div transform containment */}
     </motion.div>
+    {createPortal(
+      <AnimatePresence>
+        {showUndoConfirm && (
+          <motion.div
+            key="undo-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]"
+            onClick={() => { setShowUndoConfirm(false); setPendingUndoEvent(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <FiAlertTriangle size={20} /> Confirm Undo
+                </h3>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-5 space-y-4">
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to undo the last delivery? This action will revert the score and commentary.
+                </p>
+
+                {/* Event Details Box - Larger, Bolder, Colored */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5">
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-2.5">Previous Delivery</p>
+                  <p className="text-gray-900 font-black text-lg leading-relaxed break-words">
+                    {(() => {
+                      const text = formatEventDetails(pendingUndoEvent);
+                      // Highlight runs/wicket info in blue
+                      if (text.includes('RUNS')) {
+                        return text.split('|')[0].includes('RUNS') 
+                          ? <><span className="text-blue-700 text-xl">{text.split('|')[0].trim()}</span> {text.includes('|') ? `| ${text.split('|')[1]}` : ''}</>
+                          : text;
+                      }
+                      if (text.includes('WICKET')) {
+                        return <span className="text-red-700 text-xl">{text}</span>;
+                      }
+                      return text;
+                    })()}
+                  </p>
+                </div>
+
+                <p className="text-xs text-gray-500 italic">
+                  After undo, all scoring buttons will be available for you to re-enter the correct information.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="border-t border-gray-200 px-6 py-4 flex gap-3 justify-end">
+                <button
+                  onClick={() => { setShowUndoConfirm(false); setPendingUndoEvent(null); }}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmUndo}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <FiRotateCcw size={14} /> Confirm Undo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    , document.body)}
+    </>
   );
 }
 

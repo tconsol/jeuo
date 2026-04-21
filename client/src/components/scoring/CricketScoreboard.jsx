@@ -125,22 +125,27 @@ export default function CricketScoreboard({ score }) {
       )}
 
       {/* ── Bowling ── */}
-      {battingTeam?.bowlers && Object.values(battingTeam.bowlers).some((b) => b.isCurrentBowler) && (
+      {battingTeam?.bowlingCard && Object.keys(battingTeam.bowlingCard).length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
+          <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest"><GiCricketBat size={14} className="inline mr-1 text-red-500" /> Bowling</span>
+            <span className="text-xs text-gray-400">O M R W ER</span>
           </div>
-          {Object.entries(battingTeam.bowlers)
-            .filter(([, s]) => s.isCurrentBowler)
-            .map(([id, s]) => (
-              <div key={id} className="flex items-center justify-between px-5 py-3">
-                <span className="font-semibold text-gray-900 text-sm">{s.name || id}</span>
-                <div className="flex items-center gap-3 text-sm text-gray-600 tabular-nums">
-                  <span className="font-mono">{s.overs}-{s.maidens}-{s.runs}-{s.wickets}</span>
-                  <span className="text-gray-400 text-xs">Econ {s.economy?.toFixed(1)}</span>
+          <div className="divide-y divide-gray-50">
+            {Object.entries(battingTeam.bowlingCard)
+              .map(([id, s]) => (
+                <div key={id} className="flex items-center justify-between px-5 py-3">
+                  <span className="font-semibold text-gray-900 text-sm flex-1">{s.name || id}</span>
+                  <div className="flex items-center gap-2 text-sm tabular-nums">
+                    <span className="font-mono text-gray-900 w-6 text-center">{s.overs ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-6 text-center">{s.maidens ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-6 text-center">{s.runs ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-6 text-center">{s.wickets ?? 0}</span>
+                    <span className="text-gray-600 text-xs w-12 text-right">{((s.runs ?? 0) / Math.max(s.overs ?? 1, 1)).toFixed(2)}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+          </div>
         </div>
       )}
 

@@ -1,12 +1,28 @@
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const { v4: uuidv4 } = require('uuid');
+const https = require('https');
 const { User, Wallet } = require('../models');
 const { getRedis } = require('../config/redis');
 const logger = require('../config/logger');
 const { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/email');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// DEV HELPER: Grant 1-year premium subscription to every new registrant
+// TODO: Replace with real subscription/payment flow in MVP 2
+function devPremiumSubscription() {
+  const now = new Date();
+  const oneYearLater = new Date(now);
+  oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+  return {
+    plan: 'premium',
+    startDate: now,
+    endDate: oneYearLater,
+    isActive: true,
+    autoRenew: false,
+  };
+}
 
 class AuthService {
   static generateAccessToken(userId) {
@@ -22,30 +38,99 @@ class AuthService {
   }
 
   static async sendOtp(phone) {
-    // In production, integrate MSG91/Twilio
-    // For development, use a fixed OTP
-    const otp = process.env.NODE_ENV === 'development' ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+    const mobile = `91${phone.replace(/^\+91/, '').replace(/^91/, '')}`;
 
-    const redis = getRedis();
-    await redis.set(`otp:${phone}`, otp, 'EX', 300); // 5 min expiry
+    // Send OTP via MSG91 — MSG91 generates the OTP and injects into the template
+    try {
+      const body = JSON.stringify({
+        template_id: process.env.OTP_TEMPLATE_ID,
+        mobile,
+      });
 
-    if (process.env.NODE_ENV !== 'development') {
-      // Send OTP via SMS service
-      logger.info(`OTP sent to ${phone}`);
+      const msg91Response = await new Promise((resolve, reject) => {
+        const url = new URL(process.env.OTP_SERVICE_URL);
+        logger.info(`[MSG91] Sending OTP to ${mobile}`);
+
+        const req = https.request(
+          {
+            hostname: url.hostname,
+            path: url.pathname,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(body),
+              'authkey': process.env.OTP_AUTH_KEY,
+            },
+          },
+          (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+              logger.info(`[MSG91] Send response ${res.statusCode}: ${data}`);
+              resolve({ statusCode: res.statusCode, body: data });
+            });
+          }
+        );
+        req.on('error', reject);
+        req.setTimeout(8000, () => { req.destroy(); reject(new Error('MSG91 request timed out')); });
+        req.write(body);
+        req.end();
+      });
+
+      // MSG91 returns { type: 'success' } or { type: 'error', message: '...' }
+      let parsed = {};
+      try { parsed = JSON.parse(msg91Response.body); } catch (_) { /* non-JSON response */ }
+      if (parsed.type === 'error') {
+        throw new Error(parsed.message || `MSG91 error`);
+      }
+      if (msg91Response.statusCode >= 400) {
+        throw new Error(`MSG91 API error: ${msg91Response.statusCode}`);
+      }
+
+      logger.info(`[MSG91] OTP sent successfully to ${mobile}`);
+    } catch (err) {
+      logger.error({ phone, err: err.message }, '[MSG91] Failed to send OTP');
+      throw new Error('Failed to send OTP. Please try again.');
     }
 
     return { message: 'OTP sent successfully' };
   }
 
   static async verifyOtp(phone, otp, deviceInfo) {
-    const redis = getRedis();
-    const storedOtp = await redis.get(`otp:${phone}`);
+    const mobile = `91${phone.replace(/^\+91/, '').replace(/^91/, '')}`;
 
-    if (!storedOtp || storedOtp !== otp) {
-      throw Object.assign(new Error('Invalid or expired OTP'), { statusCode: 400 });
+    // Verify OTP via MSG91's verify endpoint
+    const verifyResponse = await new Promise((resolve, reject) => {
+      const path = `/api/v5/otp/verify?mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`;
+      logger.info(`[MSG91] Verifying OTP for ${mobile}`);
+
+      const req = https.request(
+        {
+          hostname: 'api.msg91.com',
+          path,
+          method: 'GET',
+          headers: { 'authkey': process.env.OTP_AUTH_KEY },
+        },
+        (res) => {
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => {
+            logger.info(`[MSG91] Verify response ${res.statusCode}: ${data}`);
+            resolve({ statusCode: res.statusCode, body: data });
+          });
+        }
+      );
+      req.on('error', reject);
+      req.setTimeout(8000, () => { req.destroy(); reject(new Error('MSG91 verify timed out')); });
+      req.end();
+    });
+
+    let parsed = {};
+    try { parsed = JSON.parse(verifyResponse.body); } catch (_) { /* non-JSON */ }
+    if (parsed.type !== 'success') {
+      const msg = parsed.message || 'Invalid or expired OTP';
+      throw Object.assign(new Error(msg), { statusCode: 400 });
     }
-
-    await redis.del(`otp:${phone}`);
 
     let user = await User.findOne({ phone });
     let isNewUser = false;
@@ -56,9 +141,11 @@ class AuthService {
         phone,
         name: `Player_${phone.slice(-4)}`,
         isVerified: true,
+        subscription: devPremiumSubscription(),
       });
       // Create wallet for new user
       await Wallet.create({ user: user._id });
+      logger.info({ userId: user._id, phone }, '[DEV] New user via OTP — granted 1-year premium subscription');
     }
 
     const tokens = await this._generateTokens(user, deviceInfo);
@@ -84,8 +171,10 @@ class AuthService {
         name,
         avatar: picture,
         isVerified: true,
+        subscription: devPremiumSubscription(),
       });
       await Wallet.create({ user: user._id });
+      logger.info({ userId: user._id, email }, '[DEV] New user via Google — granted 1-year premium subscription');
     } else if (!user.googleId) {
       user.googleId = googleId;
       if (!user.avatar) user.avatar = picture;
@@ -130,9 +219,11 @@ class AuthService {
       password,
       role: safeRole,
       isVerified: true,
+      subscription: devPremiumSubscription(),
     });
 
     await Wallet.create({ user: user._id });
+    logger.info({ userId: user._id, email, role: safeRole }, '[DEV] New user via email register — granted 1-year premium subscription');
 
     // Send welcome email (non-blocking)
     sendWelcomeEmail(email, name).catch(err =>

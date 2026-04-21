@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { sendOtp, verifyOtp, clearError, loginWithEmail, loginWithGoogle } from '../store/slices/authSlice';
@@ -18,6 +18,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -26,10 +27,45 @@ export default function Login() {
   const from = location.state?.from?.pathname || '/';
   const successMsg = location.state?.message;
 
+  // Handle resend countdown timer
+  useEffect(() => {
+    if (!otpSent) {
+      setResendCountdown(0);
+      return;
+    }
+
+    if (resendCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendCountdown, otpSent]);
+
+  // Start countdown when OTP is sent
+  useEffect(() => {
+    if (otpSent) {
+      setResendCountdown(30);
+    }
+  }, [otpSent]);
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     const result = await dispatch(sendOtp(phone));
-    if (!result.error) dispatch(clearError());
+    if (!result.error) {
+      dispatch(clearError());
+      setResendCountdown(30);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const result = await dispatch(sendOtp(phone));
+    if (!result.error) {
+      setOtp('');
+      setResendCountdown(30);
+      toast.success('OTP resent to your phone');
+    }
   };
 
   const handleVerifyOtp = async (e) => {
@@ -162,9 +198,21 @@ export default function Login() {
                 <button type="submit" disabled={isLoading || otp.length !== 6} className="btn-primary w-full !py-3 disabled:opacity-50">
                   {isLoading ? <Spinner text="Verifying..." /> : 'Verify & Sign In'}
                 </button>
-                <button type="button" onClick={() => window.location.reload()} className="btn-ghost w-full text-sm">
-                  Change Number
-                </button>
+
+                {/* Resend OTP Section */}
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={handleResendOtp} 
+                    disabled={resendCountdown > 0 || isLoading}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  >
+                    {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend OTP'}
+                  </button>
+                  <button type="button" onClick={() => window.location.reload()} className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                    Change Number
+                  </button>
+                </div>
               </form>
             )}
           </motion.div>

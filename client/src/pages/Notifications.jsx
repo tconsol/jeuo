@@ -25,25 +25,34 @@ export default function Notifications() {
 
   const markReadMut = useMutation({
     mutationFn: (id) => api.patch(`/notifications/${id}/read`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+    },
   });
 
   const markAllMut = useMutation({
     mutationFn: () => api.patch('/notifications/read-all'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+    },
   });
 
   useEffect(() => {
     notificationSocket.connect();
-    const onNew = () => queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    const onNew = () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+    };
     notificationSocket.on('notification:new', onNew);
     return () => {
       notificationSocket.off('notification:new', onNew);
     };
   }, [queryClient]);
 
-  const notifications = data?.notifications || [];
-  const unread = notifications.filter((n) => !n.read).length;
+  const notifications = data?.data?.notifications || [];
+  const unread = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -91,9 +100,9 @@ export default function Notifications() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.02 }}
-                  onClick={() => !n.read && markReadMut.mutate(n._id)}
+                  onClick={() => !n.isRead && markReadMut.mutate(n._id)}
                   className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:shadow-card ${
-                    n.read
+                    n.isRead
                       ? 'bg-white border-gray-100 opacity-60'
                       : 'bg-white border-primary-100 shadow-sm border-l-[3px] border-l-primary-400'
                   }`}
@@ -104,7 +113,7 @@ export default function Notifications() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 leading-snug">{n.message}</p>
+                    <p className="text-sm text-gray-800 leading-snug">{n.body || n.message || n.title}</p>
                     <div className="flex items-center gap-3 mt-1">
                       <p className="text-xs text-gray-400">
                         {n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
@@ -115,7 +124,7 @@ export default function Notifications() {
                     </div>
                   </div>
 
-                  {!n.read && (
+                  {!n.isRead && (
                     <div className="w-2 h-2 rounded-full bg-primary-500 mt-1.5 flex-shrink-0" />
                   )}
                 </motion.div>

@@ -114,15 +114,15 @@ class CricketScoring {
     let isLegalDelivery = true;
 
     // Initialize batting card for striker
-    // Use payload.striker as fallback (seed data or legacy events)
-    const strikerId = innings.batsmen.striker || (event.player?.toString?.() || event.player);
+    // Use event.player as fallback for seed data / legacy events without players_set
+    const strikerId = innings.batsmen.striker || (event.player ? event.player.toString() : null);
     if (strikerId && !innings.battingCard[strikerId]) {
       innings.battingCard[strikerId] = { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
     }
 
-    // Initialize bowling card for bowler
-    // Use payload.bowler as fallback (seed data or legacy events where currentBowler not set)
-    const bowlerId = innings.currentBowler || (p.bowler ? p.bowler.toString() : null);
+    // If payload.bowler is set, use it and update currentBowler (handles seed data / over changes)
+    if (p.bowler) innings.currentBowler = p.bowler.toString();
+    const bowlerId = innings.currentBowler;
     if (bowlerId && !innings.bowlingCard[bowlerId]) {
       innings.bowlingCard[bowlerId] = { overs: 0, maidens: 0, runs: 0, wickets: 0, economy: 0, balls: 0, wides: 0, noBalls: 0 };
     }
@@ -277,7 +277,7 @@ class CricketScoring {
       innings.totalBalls += 1;
     }
 
-    const strikerId = innings.batsmen.striker;
+    const strikerId = innings.batsmen.striker || (event.player ? event.player.toString() : null);
     if (strikerId) {
       if (!innings.battingCard[strikerId]) {
         innings.battingCard[strikerId] = { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
@@ -287,6 +287,8 @@ class CricketScoring {
       }
     }
 
+    // If payload.bowler is set, use it and update currentBowler (handles seed data / over changes)
+    if (p.bowler) innings.currentBowler = p.bowler.toString();
     const bowlerId = innings.currentBowler;
     if (bowlerId) {
       if (!innings.bowlingCard[bowlerId]) {

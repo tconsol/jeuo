@@ -236,23 +236,38 @@ class ScoringService {
       throw new Error('No score computation method found');
     }
 
-    await Match.findByIdAndUpdate(matchId, {
-      $set: { scoreSnapshot: newScore },
-      $inc: { scoringVersion: 1 },
-    });
+    // If the undone event generated commentary (delivery or wicket), remove the last entry
+    const generatesCommentary = match.sport === 'cricket' &&
+      (lastEvent.type === 'delivery' || lastEvent.type === 'wicket');
 
-    // Publish undo update
+    if (generatesCommentary) {
+      await Match.findByIdAndUpdate(matchId, {
+        $set: { scoreSnapshot: newScore },
+        $inc: { scoringVersion: 1 },
+        $pop: { commentary: 1 }, // remove last commentary entry
+      });
+    } else {
+      await Match.findByIdAndUpdate(matchId, {
+        $set: { scoreSnapshot: newScore },
+        $inc: { scoringVersion: 1 },
+      });
+    }
+
+    // Publish undo update with fresh commentary
     try {
       const redis = getRedis();
+      const freshMatch = await Match.findById(matchId).select('commentary').lean();
       await redis.publish(`match:${matchId}:score`, JSON.stringify({
         type: 'undo',
         score: newScore,
+        commentary: freshMatch?.commentary || [],
       }));
     } catch (err) {
       logger.warn({ matchId, err: err.message }, 'Failed to publish undo update');
     }
 
-    return { undoneEvent: lastEvent.toObject(), score: newScore };
+    const finalMatch = await Match.findById(matchId).select('commentary').lean();
+    return { undoneEvent: lastEvent.toObject(), score: newScore, commentary: finalMatch?.commentary || [] };
   }
 
   /**
