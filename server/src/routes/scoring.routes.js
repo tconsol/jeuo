@@ -23,6 +23,8 @@ router.post('/:matchId/toss', authenticate, requireSubscription('manage_scoring'
 router.post('/:matchId/toss-decision', authenticate, requireSubscription('manage_scoring'), ctrl.setTossDecision);
 router.post('/:matchId/players', authenticate, requireSubscription('manage_scoring'), ctrl.setMatchPlayers);
 router.post('/:matchId/scorer', authenticate, requireSubscription('manage_scoring'), ctrl.addScorer);
+router.delete('/:matchId/scorer/:scorerId', authenticate, requireSubscription('manage_scoring'), ctrl.removeScorer);
+router.put('/:matchId/live-link', authenticate, requireSubscription('manage_scoring'), ctrl.setLiveLink);
 router.post('/:matchId/substitute', authenticate, requireSubscription('manage_scoring'), ctrl.substitutePlayer);
 router.post('/:matchId/confirm-result', authenticate, ctrl.confirmResult);
 router.post('/:matchId/rematch', authenticate, requireSubscription('manage_scoring'), ctrl.rematch);

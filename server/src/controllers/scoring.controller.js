@@ -93,6 +93,45 @@ exports.addScorer = async (req, res, next) => {
   }
 };
 
+exports.removeScorer = async (req, res, next) => {
+  try {
+    const Match = require('../models/Match');
+    const match = await Match.findById(req.params.matchId);
+    if (!match) throw new Error('Match not found');
+    const isExistingScorer = match.scorers.some(s => s.toString() === req.user._id.toString());
+    const isCaptain = match.teams.home.captain?.toString() === req.user._id.toString() ||
+                      match.teams.away.captain?.toString() === req.user._id.toString();
+    if (!isExistingScorer && !isCaptain) throw new Error('Not authorized to remove scorers');
+    match.scorers = match.scorers.filter(s => s.toString() !== req.params.scorerId);
+    await match.save();
+    res.json({ success: true, data: { match } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.setLiveLink = async (req, res, next) => {
+  try {
+    const Match = require('../models/Match');
+    const { liveLink } = req.body;
+    const match = await Match.findById(req.params.matchId);
+    if (!match) throw new Error('Match not found');
+    const isScorer = match.scorers.some(s => s.toString() === req.user._id.toString());
+    if (!isScorer) throw new Error('Not authorized');
+    match.liveLink = liveLink || null;
+    await match.save();
+    // Broadcast to all viewers
+    try {
+      const { getRedis } = require('../config/redis');
+      const redis = getRedis();
+      await redis.publish(`match:${req.params.matchId}:status`, JSON.stringify({ liveLink: match.liveLink }));
+    } catch { /* ignore publish errors */ }
+    res.json({ success: true, data: { liveLink: match.liveLink } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
 exports.getCommentary = async (req, res, next) => {
   try {
     const Match = require('../models/Match');

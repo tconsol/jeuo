@@ -175,11 +175,28 @@ class ScoringService {
     try {
       const redis = getRedis();
       const freshMatch = await Match.findById(matchId).select('commentary').lean();
+
+      // Determine animation type for all viewers
+      let animationType = null;
+      let dismissalType = null;
+      if (eventData.type === 'wicket') {
+        animationType = 'wicket';
+        dismissalType = eventData.data?.wicketType || 'wicket_default';
+      } else if (eventData.type === 'delivery' && !eventData.data?.isExtra) {
+        if (eventData.data?.runs === 6) animationType = 'six';
+        else if (eventData.data?.runs === 4) animationType = 'four';
+      } else if (eventData.type === 'delivery' && eventData.data?.isExtra && eventData.data?.extraType === 'no_ball') {
+        if (eventData.data?.runs === 6) animationType = 'six';
+        else if (eventData.data?.runs === 4) animationType = 'four';
+      }
+
       await redis.publish(`match:${matchId}:score`, JSON.stringify({
         event: event.toObject(),
         score: newScore,
         scoreVersion: updated.scoringVersion,
         commentary: freshMatch?.commentary || [],
+        animationType,
+        dismissalType,
       }));
     } catch (err) {
       logger.warn({ matchId, err: err.message }, 'Failed to publish score update');

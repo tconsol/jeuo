@@ -56,6 +56,9 @@ const matchSchema = new mongoose.Schema({
 
   scorers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
+  // Live stream link (e.g. YouTube embed URL) set by scorer
+  liveLink: { type: String, default: null },
+
   // Toss
   toss: {
     wonBy: { type: String, enum: ['home', 'away'] },

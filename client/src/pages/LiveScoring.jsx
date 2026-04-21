@@ -5,9 +5,11 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import { matchSocket, connectMatchSocket, disconnectMatchSocket } from '../lib/socket';
+import { playBoundarySound, playSixSound, playWicketSound, preloadSounds } from '../lib/audioEffects';
 import {
   FiArrowLeft, FiPlay, FiFlag, FiRadio, FiBarChart2, FiMic, FiInfo, FiX,
   FiAlertTriangle, FiUser, FiMapPin, FiRotateCcw, FiTarget, FiTv, FiSquare, FiCheck,
+  FiLink, FiSearch, FiPlus, FiTrash2, FiUsers, FiExternalLink, FiChevronDown, FiChevronUp,
 } from 'react-icons/fi';
 import {
   GiCricketBat, GiSoccerBall, GiBasketballBall, GiTennisBall,
@@ -58,75 +60,150 @@ const WICKET_TYPES = [
 /* ANIMATION OVERLAYS */
 
 function BoundaryAnimation({ type, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 2200); return () => clearTimeout(t); }, [onDone]);
-  const isSix = type === 'six';
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.3 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.5 }}
-      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-    >
-      <div className="relative">
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 0.6, repeat: 2 }}
-          className="text-center"
-        >
-          <div className={`text-[120px] leading-none font-black ${isSix ? 'text-purple-400 drop-shadow-[0_0_40px_rgba(168,85,247,0.8)]' : 'text-blue-400 drop-shadow-[0_0_40px_rgba(59,130,246,0.8)]'}`}>
-            {isSix ? '6' : '4'}
-          </div>
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className={`text-4xl font-black mt-2 ${isSix ? 'text-purple-400' : 'text-blue-400'}`}
-          >
-            {isSix ? 'MAXIMUM!' : 'BOUNDARY!'}
-          </motion.p>
-        </motion.div>
-        {Array.from({ length: 12 }).map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ x: 0, y: 0, opacity: 1 }}
-            animate={{
-              x: Math.cos((i * 30) * Math.PI / 180) * 150,
-              y: Math.sin((i * 30) * Math.PI / 180) * 150,
-              opacity: 0,
-            }}
-            transition={{ duration: 1.5, delay: 0.2 }}
-            className={`absolute top-1/2 left-1/2 w-3 h-3 rounded-full ${isSix ? 'bg-purple-400' : 'bg-blue-400'}`}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
+  useEffect(() => {
+    const timer = setTimeout(onDone, 3000); // Increased from 2.5s to 3s
+    return () => clearTimeout(timer);
+  }, [onDone]);
 
-function WicketAnimation({ onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 2500); return () => clearTimeout(t); }, [onDone]);
-  return (
+  const isSix = type === 'six';
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-red-900/30 backdrop-blur-sm pointer-events-none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/30 backdrop-blur-md"
+    >
+      <div className="relative">
+        <motion.div
+          animate={{ scale: [0.5, 1.3, 1], rotate: [0, 20, -5, 0] }}
+          transition={{ duration: 0.8, repeat: 2, repeatDelay: 0.3 }}
+          className="text-center"
+        >
+          <motion.div
+            className={`text-[200px] leading-none font-black drop-shadow-[0_0_80px_rgba(${isSix ? '168,85,247' : '59,130,246'},0.9)]`}
+            style={{
+              color: isSix ? '#a855f7' : '#3b82f6',
+              textShadow: isSix
+                ? '0 0 60px rgba(168,85,247,0.8), 0 0 100px rgba(168,85,247,0.6)'
+                : '0 0 60px rgba(59,130,246,0.8), 0 0 100px rgba(59,130,246,0.6)',
+            }}
+          >
+            {isSix ? '6' : '4'}
+          </motion.div>
+          <motion.p
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="text-6xl font-black mt-6"
+            style={{
+              color: isSix ? '#e879f9' : '#60a5fa',
+              textShadow: isSix
+                ? '0 0 40px rgba(168,85,247,0.7)'
+                : '0 0 40px rgba(59,130,246,0.7)',
+            }}
+          >
+            {isSix ? '🎉 MAXIMUM!' : '💥 BOUNDARY!'}
+          </motion.p>
+        </motion.div>
+        {Array.from({ length: 20 }).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+            animate={{
+              x: Math.cos((i * 18) * Math.PI / 180) * 250,
+              y: Math.sin((i * 18) * Math.PI / 180) * 250,
+              opacity: 0,
+              scale: 0,
+            }}
+            transition={{ duration: 2, delay: 0.1 }}
+            className={`absolute top-1/2 left-1/2 w-5 h-5 rounded-full ${
+              isSix ? 'bg-purple-400' : 'bg-blue-400'
+            }`}
+            style={{
+              boxShadow: isSix
+                ? '0 0 20px rgba(168,85,247,0.8)'
+                : '0 0 20px rgba(59,130,246,0.8)',
+            }}
+          />
+        ))}
+      </div>
+    </motion.div>,
+    document.body
+  );
+}
+
+function WicketAnimation({ dismissalType = 'wicket_default', onDone }) {
+  useEffect(() => {
+    const timer = setTimeout(onDone, 3500); // Increased from 3s to 3.5s
+    return () => clearTimeout(timer);
+  }, [onDone]);
+
+  const dismissalLabels = {
+    bowled: 'BOWLED!',
+    caught: 'CAUGHT!',
+    lbw: 'LBW!',
+    run_out: 'RUN OUT!',
+    stumped: 'STUMPED!',
+    hit_wicket: 'HIT WICKET!',
+    wicket_default: 'OUT!',
+  };
+
+  const dismissalLabel = dismissalLabels[dismissalType] || dismissalLabels.wicket_default;
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-red-900/50 backdrop-blur-lg pointer-events-none"
     >
       <motion.div
-        initial={{ scale: 0.2, rotate: -20 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', damping: 8 }}
+        initial={{ scale: 0.1, rotate: -60, y: -150 }}
+        animate={{ scale: 1, rotate: 0, y: 0 }}
+        transition={{ type: 'spring', damping: 5, mass: 0.6, stiffness: 200 }}
         className="text-center"
       >
-        <div className="flex justify-center mb-2"><GiCricketBat size={96} className="text-red-300" /></div>
-        <motion.p
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-5xl font-black text-red-400 mt-3"
-        >OUT!</motion.p>
+        <motion.div
+          animate={{ rotate: [-25, 25, -25, 25, 0] }}
+          transition={{ duration: 1, delay: 0.4 }}
+          className="flex justify-center mb-6"
+        >
+          <GiCricketBat
+            size={140}
+            className="text-red-200 drop-shadow-[0_0_60px_rgba(248,113,113,0.9)]"
+            style={{
+              filter: 'drop-shadow(0 0 40px rgba(248,113,113,0.8))',
+            }}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 60, opacity: 0, scale: 0.8 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6, duration: 0.7 }}
+        >
+          <p
+            className="text-7xl font-black mb-3"
+            style={{
+              color: '#fca5a5',
+              textShadow:
+                '0 0 40px rgba(248,113,113,0.8), 0 0 80px rgba(220,38,38,0.6), 0 0 120px rgba(185,28,28,0.4)',
+            }}
+          >
+            {dismissalLabel}
+          </p>
+
+          <motion.div
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 0.5 }}
+            className="text-6xl"
+          >
+            💥 ⚡
+          </motion.div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -568,7 +645,11 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
     if (extraType) {
       payload.data.isExtra = true;
       payload.data.extraType = extraType;
-      payload.data.extraRuns = runs;
+      // no_ball: `runs` = bat runs (go to batsman), `extraRuns` = penalty extras (overthrows etc.)
+      // wide/bye/leg_bye: `runs` = extra runs run (beyond the 1 penalty for wide), sent as extraRuns
+      payload.data.extraRuns = extraType === 'no_ball' ? 0 : runs;
+      // For no_ball, bat runs stay in payload.data.runs; server credits them to batsman separately
+      if (extraType === 'no_ball') payload.data.runs = runs;
     }
     if (shotArea) payload.data.shotArea = shotArea;
     onEvent(payload);
@@ -1372,6 +1453,160 @@ function MatchInfo({ match, score }) {
   );
 }
 
+/* LIVE CRICKET PANEL (shown for everyone on live tab) */
+
+function LiveCricketPanel({ score, match, refreshKey }) {
+  if (!match || match.sport !== 'cricket' || !score?.currentInningsData) return null;
+
+  const innings = score.currentInningsData;
+  const allPlayers = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
+  const pn = (id) => { if (!id) return '-'; const p = allPlayers.find(x => (x._id || x)?.toString() === id?.toString()); return p?.name || '—'; };
+
+  const striker = innings.batsmen?.striker?.toString?.() || innings.batsmen?.striker;
+  const nonStriker = innings.batsmen?.nonStriker?.toString?.() || innings.batsmen?.nonStriker;
+  const bowler = innings.currentBowler?.toString?.() || innings.currentBowler;
+  const currentOverBalls = innings.currentOver || [];
+  
+  const strikerCard = striker ? innings.battingCard?.[striker] : null;
+  const nonStrikerCard = nonStriker ? innings.battingCard?.[nonStriker] : null;
+  const bowlerCard = bowler ? innings.bowlingCard?.[bowler] : null;
+
+  const totalExtras = (innings.extras?.wides || 0) + (innings.extras?.noBalls || 0) + (innings.extras?.byes || 0) + (innings.extras?.legByes || 0);
+  const overs = Math.floor((innings.totalBalls || 0) / 6);
+  const balls = (innings.totalBalls || 0) % 6;
+  const overStr = `${overs}.${balls}`;
+  const runRate = (innings.totalBalls || 0) > 0 ? ((innings.runs || 0) / (overs + balls / 6)).toFixed(2) : '0.00';
+
+  return (
+    <div className="space-y-3" key={refreshKey}>
+      {/* Score Card */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-5 text-white shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold text-indigo-200">CURRENT INNINGS</div>
+          <div className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">{overStr} Ov</div>
+        </div>
+        <motion.div
+          key={`score-${innings.runs}-${innings.wickets}`}
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ duration: 0.4 }}
+          className="text-center"
+        >
+          <div className="flex items-end justify-center gap-3">
+            <span className="text-6xl font-black tabular-nums">{innings.runs || 0}</span>
+            <span className="text-3xl font-bold text-indigo-300 mb-2">/{innings.wickets || 0}</span>
+          </div>
+        </motion.div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="bg-white/10 rounded-lg py-2">
+            <p className="text-indigo-200 text-xs font-semibold">RR</p>
+            <p className="font-bold text-lg">{runRate}</p>
+          </div>
+          <div className="bg-white/10 rounded-lg py-2">
+            <p className="text-indigo-200 text-xs font-semibold">EXTRAS</p>
+            <p className="font-bold text-lg">{totalExtras}</p>
+          </div>
+          <div className="bg-white/10 rounded-lg py-2">
+            <p className="text-indigo-200 text-xs font-semibold">BALLS</p>
+            <p className="font-bold text-lg">{innings.totalBalls || 0}</p>
+          </div>
+        </div>
+        {innings.target && (
+          <div className="mt-3 text-center text-sm bg-white/10 rounded-lg py-2 font-semibold">
+            Target: {innings.target} | Need: {Math.max(0, innings.target - innings.runs)} from {((score?.oversPerInnings || match.format?.overs || 20) * 6 - (innings.totalBalls || 0))} balls
+          </div>
+        )}
+      </div>
+
+      {/* Batting Info */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">⚾ At The Crease</p>
+        <div className="space-y-2">
+          {striker && (
+            <div className="flex items-center justify-between p-2.5 bg-green-50 rounded-lg border border-green-200">
+              <div>
+                <p className="font-bold text-gray-900 text-sm">{pn(striker)}</p>
+                <p className="text-xs text-gray-500">Striker</p>
+              </div>
+              {strikerCard && (
+                <motion.div
+                  key={`striker-${strikerCard.runs}-${strikerCard.balls}`}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 0.3 }}
+                  className="text-right"
+                >
+                  <p className="font-bold text-lg text-green-600">{strikerCard.runs}</p>
+                  <p className="text-xs text-gray-500">({strikerCard.balls})</p>
+                </motion.div>
+              )}
+            </div>
+          )}
+          {nonStriker && (
+            <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <p className="font-bold text-gray-900 text-sm">{pn(nonStriker)}</p>
+                <p className="text-xs text-gray-500">Non-striker</p>
+              </div>
+              {nonStrikerCard && (
+                <div className="text-right">
+                  <p className="font-bold text-lg text-gray-600">{nonStrikerCard.runs}</p>
+                  <p className="text-xs text-gray-500">({nonStrikerCard.balls})</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bowling Info */}
+      {bowler && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🎯 Bowling</p>
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div>
+              <p className="font-bold text-gray-900 text-sm">{pn(bowler)}</p>
+              <p className="text-xs text-gray-500">Bowler</p>
+            </div>
+            {bowlerCard && (
+              <div className="text-right text-xs font-mono">
+                <p className="text-blue-600 font-bold text-sm">{bowlerCard.overs || 0}–{bowlerCard.maidens || 0}–{bowlerCard.runs || 0}–{bowlerCard.wickets || 0}</p>
+                <p className="text-gray-500 text-xs">O-M-R-W</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* This Over Balls */}
+      {currentOverBalls.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">⚬ This Over</p>
+          <div className="flex gap-2 flex-wrap">
+            {currentOverBalls.map((ball, i) => (
+              <motion.span
+                key={`${i}-${ball.runs}-${ball.isWicket}`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', delay: i * 0.05, stiffness: 300 }}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shadow-md ${
+                  ball.isWicket ? 'bg-red-500 text-white' :
+                  !ball.isLegalDelivery ? 'bg-yellow-400 text-yellow-900' :
+                  ball.runs === 4 ? 'bg-blue-500 text-white' :
+                  ball.runs === 6 ? 'bg-purple-500 text-white' :
+                  ball.runs === 0 ? 'bg-gray-200 text-gray-600' :
+                  'bg-indigo-100 text-indigo-700'
+                }`}
+              >
+                {ball.isWicket ? 'W' : ball.runs}
+              </motion.span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* LIVE BATTING/BOWLING SUMMARY (shown for everyone on live tab) */
 
 function LiveBattingSummary({ score, match }) {
@@ -1511,6 +1746,331 @@ function LiveBattingSummary({ score, match }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   YOUTUBE LIVE EMBED
+   ═══════════════════════════════════════════════════════════ */
+function extractYouTubeId(url) {
+  if (!url) return null;
+  // Already an embed URL
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  // youtu.be short link
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (shortMatch) return shortMatch[1];
+  // youtube.com/watch?v=
+  const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  // youtube.com/live/
+  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/);
+  if (liveMatch) return liveMatch[1];
+  return null;
+}
+
+function getEmbedUrl(rawUrl) {
+  const id = extractYouTubeId(rawUrl);
+  if (!id) return null;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=0&rel=0`;
+}
+
+function YouTubeLiveEmbed({ url }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const embedUrl = getEmbedUrl(url);
+  if (!embedUrl) return null;
+  return (
+    <div className="bg-black rounded-2xl overflow-hidden shadow-lg border border-gray-800">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-900">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-white text-xs font-semibold">YouTube Live</span>
+        </div>
+        <button onClick={() => setCollapsed(p => !p)} className="text-gray-400 hover:text-white transition p-1">
+          {collapsed ? <FiChevronDown size={14} /> : <FiChevronUp size={14} />}
+        </button>
+      </div>
+      {!collapsed && (
+        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+          <iframe
+            src={embedUrl}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="YouTube Live Stream"
+            sandbox="allow-scripts allow-same-origin allow-presentation"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE LINK SETUP (post-player-selection step)
+   ═══════════════════════════════════════════════════════════ */
+function LiveLinkSetup({ onSubmit }) {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+
+  const validate = (v) => {
+    if (!v) return true; // optional
+    const id = extractYouTubeId(v);
+    return !!id;
+  };
+
+  const handleSubmit = () => {
+    if (url && !validate(url)) {
+      setError('Please enter a valid YouTube URL (youtube.com/watch?v=... or youtu.be/...)');
+      return;
+    }
+    onSubmit(url.trim() || null);
+  };
+
+  return (
+    <div className="p-6 space-y-5">
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-gray-700">YouTube Live URL</label>
+        <div className="relative">
+          <FiLink size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => { setUrl(e.target.value); setError(''); }}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+          />
+        </div>
+        {error && <p className="text-red-500 text-xs">{error}</p>}
+        <p className="text-gray-400 text-xs">Optional – you can add or change this later from the Live tab</p>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition active:scale-95">
+          {url ? 'Add Stream & Start' : 'Skip & Start'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE LINK MANAGER (within scorer live tab)
+   ═══════════════════════════════════════════════════════════ */
+function LiveLinkManager({ matchId, liveLink, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+  const [url, setUrl] = useState(liveLink || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (url && !extractYouTubeId(url)) {
+      setError('Invalid YouTube URL');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.put(`/scoring/${matchId}/live-link`, { liveLink: url.trim() || null });
+      onUpdated(url.trim() || null);
+      setEditing(false);
+    } catch { setError('Failed to save'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center gap-2">
+          <FiTv size={14} className="text-red-500" />
+          <span className="text-sm font-semibold text-gray-700">YouTube Live Stream</span>
+        </div>
+        {!editing && (
+          <button onClick={() => { setUrl(liveLink || ''); setEditing(true); }}
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+            {liveLink ? 'Change' : 'Add'}
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div className="p-4 space-y-3">
+          <div className="relative">
+            <FiLink size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="url" value={url} onChange={e => { setUrl(e.target.value); setError(''); }}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving}
+              className="flex-1 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition">
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold hover:bg-gray-200 transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="px-5 py-3">
+          {liveLink ? (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+              <span className="truncate">{liveLink}</span>
+              <button onClick={() => window.open(liveLink, '_blank', 'noopener')} className="ml-auto text-indigo-500 hover:text-indigo-600 flex-shrink-0">
+                <FiExternalLink size={13} />
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">No live stream added yet</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRANSFER SCORER PANEL
+   ═══════════════════════════════════════════════════════════ */
+function TransferScorerPanel({ matchId, match, currentUserId, onUpdated }) {
+  const [expanded, setExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [adding, setAdding] = useState(null);
+  const [removing, setRemoving] = useState(null);
+
+  const scorers = match?.scorers || [];
+  const currentScorer = scorers.find(s => (s._id || s) === currentUserId || (s.user?._id || s.user) === currentUserId);
+
+  const allPlayers = [
+    ...(match?.teamA?.players || []),
+    ...(match?.teamB?.players || []),
+  ].filter(Boolean);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) { setResults([]); return; }
+    const q = searchQuery.toLowerCase();
+    const filtered = allPlayers.filter(p => {
+      const userId = p._id || p.user?._id || p;
+      const name = p.name || p.username || p.user?.name || p.user?.username || '';
+      return name.toLowerCase().includes(q);
+    });
+    setResults(filtered.slice(0, 8));
+  }, [searchQuery]);
+
+  const handleAdd = async (userId) => {
+    setAdding(userId);
+    try {
+      const { data } = await api.post(`/scoring/${matchId}/scorer`, { userId });
+      onUpdated(data.data?.match || data.match);
+    } catch { /* ignore */ }
+    finally { setAdding(null); }
+  };
+
+  const handleRemove = async (scorerId) => {
+    setRemoving(scorerId);
+    try {
+      const { data } = await api.delete(`/scoring/${matchId}/scorer/${scorerId}`);
+      onUpdated(data.data?.match || data.match);
+    } catch { /* ignore */ }
+    finally { setRemoving(null); }
+  };
+
+  const isAlreadyScorer = (playerId) =>
+    scorers.some(s => (s._id || s.user?._id || s) === playerId);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <button onClick={() => setExpanded(p => !p)}
+        className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition">
+        <div className="flex items-center gap-2">
+          <FiUsers size={14} className="text-indigo-500" />
+          <span className="text-sm font-semibold text-gray-700">Manage Scorers</span>
+          {scorers.length > 0 && (
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{scorers.length}</span>
+          )}
+        </div>
+        {expanded ? <FiChevronUp size={14} className="text-gray-400" /> : <FiChevronDown size={14} className="text-gray-400" />}
+      </button>
+      {expanded && (
+        <div className="p-4 space-y-4">
+          {/* Current scorers */}
+          {scorers.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Scorers</p>
+              {scorers.map((s) => {
+                const id = s._id || s.user?._id || s;
+                const name = s.name || s.username || s.user?.name || s.user?.username || 'Scorer';
+                const isMe = id === currentUserId;
+                return (
+                  <div key={id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <FiUser size={12} className="text-indigo-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">{name}{isMe ? ' (you)' : ''}</span>
+                    </div>
+                    {!isMe && (
+                      <button onClick={() => handleRemove(id)} disabled={removing === id}
+                        className="text-red-400 hover:text-red-600 disabled:opacity-40 transition p-1 rounded-lg hover:bg-red-50">
+                        {removing === id ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /> : <FiTrash2 size={13} />}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add scorer */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Add Scorer</p>
+            <div className="relative">
+              <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search players by name..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+            {results.length > 0 && (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {results.map((p) => {
+                  const id = p._id || p.user?._id || p;
+                  const name = p.name || p.username || p.user?.name || p.user?.username || 'Player';
+                  const already = isAlreadyScorer(id);
+                  return (
+                    <div key={id} className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-gray-50 transition">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                          <FiUser size={12} className="text-gray-500" />
+                        </div>
+                        <span className="text-sm text-gray-700">{name}</span>
+                      </div>
+                      {already ? (
+                        <span className="text-xs text-green-600 font-semibold flex items-center gap-1"><FiCheck size={11} /> Scorer</span>
+                      ) : (
+                        <button onClick={() => handleAdd(id)} disabled={adding === id}
+                          className="flex items-center gap-1 text-xs font-semibold bg-indigo-50 text-indigo-600 px-2.5 py-1.5 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition">
+                          {adding === id ? <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> : <><FiPlus size={11} /> Add</>}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {searchQuery && results.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-2">No matching players found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* MAIN LIVE SCORING PAGE */
 
 export default function LiveScoring() {
@@ -1527,10 +2087,22 @@ export default function LiveScoring() {
   const [activeTab, setActiveTab] = useState('live');
   const [animation, setAnimation] = useState(null);
   const [matchPhase, setMatchPhase] = useState('loading');
+  const [liveLink, setLiveLink] = useState(null);
 
   const isScorer = match?.scorers?.some(
     s => (s._id || s)?.toString() === user?._id
   );
+
+  // Keep a ref so socket closures always read the latest value
+  const isScorerRef = useRef(isScorer);
+  useEffect(() => { isScorerRef.current = isScorer; }, [isScorer]);
+
+  // Auto-close animations after 2 seconds
+  useEffect(() => {
+    if (!animation) return;
+    const timer = setTimeout(() => setAnimation(null), 2000);
+    return () => clearTimeout(timer);
+  }, [animation]);
 
   useEffect(() => {
     const load = async () => {
@@ -1542,6 +2114,7 @@ export default function LiveScoring() {
         setScore(payload.score);
         setEvents(payload.events || []);
         setCommentary(m?.commentary || []);
+        setLiveLink(m?.liveLink || null);
 
         if (m.status === 'completed') setMatchPhase('completed');
         else if (m.status === 'live') {
@@ -1565,6 +2138,28 @@ export default function LiveScoring() {
     load();
   }, [matchId]);
 
+  // Preload sounds and setup real-time polling for data updates
+  useEffect(() => {
+    preloadSounds();
+
+    if (!matchId || !match?.status === 'live') return;
+
+    // Poll for updates every 2 seconds when live
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/scoring/${matchId}`);
+        const payload = data.data || data;
+        if (payload?.score) setScore(payload.score);
+        if (payload?.events) setEvents(payload.events);
+        if (payload?.match?.commentary) setCommentary(payload.match.commentary);
+      } catch (err) {
+        console.warn('Polling update failed:', err);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [matchId, match?.status]);
+
   useEffect(() => {
     if (!matchId) return;
     // Initialize match socket with auth token
@@ -1574,13 +2169,26 @@ export default function LiveScoring() {
     const onScoreUpdate = (data) => {
       if (data.score) setScore(data.score);
       if (data.event) setEvents((prev) => [...prev, data.event]);
-      // commentary is always replaced (handles both new entries and undo removal)
       if (data.commentary !== undefined) setCommentary(data.commentary);
+      if (data.liveLink !== undefined) setLiveLink(data.liveLink);
+
+      // Trigger animations for ALL viewers from socket events
+      if (!isScorerRef.current && data.animationType) {
+        setAnimation({ type: data.animationType, dismissalType: data.dismissalType });
+        if (data.animationType === 'four') playBoundarySound();
+        else if (data.animationType === 'six') playSixSound();
+        else if (data.animationType === 'wicket') playWicketSound(data.dismissalType || 'wicket_default');
+      }
     };
     matchSocket.on('score:update', onScoreUpdate);
+    const onMatchStatus = (data) => {
+      if (data.liveLink !== undefined) setLiveLink(data.liveLink);
+    };
+    matchSocket.on('match:status', onMatchStatus);
     return () => {
       matchSocket.emit('leave:match', matchId);
       matchSocket.off('score:update', onScoreUpdate);
+      matchSocket.off('match:status', onMatchStatus);
     };
   }, [matchId]);
 
@@ -1594,9 +2202,19 @@ export default function LiveScoring() {
       if (result?.event) setEvents(prev => [...prev, result.event]);
 
       const runs = event.data?.runs;
-      if (event.type === 'wicket') setAnimation({ type: 'wicket' });
-      else if (runs === 6) setAnimation({ type: 'six' });
-      else if (runs === 4) setAnimation({ type: 'four' });
+      
+      // Trigger animations with audio
+      if (event.type === 'wicket') {
+        const dismissalType = event.data?.dismissalType || 'wicket_default';
+        setAnimation({ type: 'wicket', dismissalType });
+        playWicketSound(dismissalType);
+      } else if (runs === 6) {
+        setAnimation({ type: 'six' });
+        playSixSound();
+      } else if (runs === 4) {
+        setAnimation({ type: 'four' });
+        playBoundarySound();
+      }
 
       // Always refresh full score from server to ensure consistency
       try {
@@ -1757,7 +2375,7 @@ export default function LiveScoring() {
       const payload = data.data || data;
       setMatch(payload.match);
       setScore(payload.score);
-      setMatchPhase('scoring');
+      setMatchPhase('live_link'); // prompt for YouTube live link
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to set players');
     }
@@ -1843,7 +2461,12 @@ export default function LiveScoring() {
       <AnimatePresence>
         {animation?.type === 'four' && <BoundaryAnimation type="four" onDone={() => setAnimation(null)} />}
         {animation?.type === 'six' && <BoundaryAnimation type="six" onDone={() => setAnimation(null)} />}
-        {animation?.type === 'wicket' && <WicketAnimation onDone={() => setAnimation(null)} />}
+        {animation?.type === 'wicket' && (
+          <WicketAnimation
+            dismissalType={animation.dismissalType}
+            onDone={() => setAnimation(null)}
+          />
+        )}
       </AnimatePresence>
 
       {/* Hero Header */}
@@ -1916,10 +2539,29 @@ export default function LiveScoring() {
             const { data } = await api.get(`/scoring/${matchId}`);
             setMatch(data.data?.match);
             setScore(data.data?.score);
-            setMatchPhase('scoring');
+            setMatchPhase('live_link');
           }} className="px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition active:scale-95">
             <FiPlay size={15} className="mr-1" /> Start Scoring
           </button>
+        </div>
+      )}
+
+      {/* YouTube Live Link step */}
+      {matchPhase === 'live_link' && isScorer && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <FiTv size={20} /> Add YouTube Live Stream
+            </h3>
+            <p className="text-red-100 text-xs mt-0.5">Let your audience watch the live match on YouTube</p>
+          </div>
+          <LiveLinkSetup onSubmit={async (url) => {
+            try {
+              if (url) await api.put(`/scoring/${matchId}/live-link`, { liveLink: url });
+              setLiveLink(url || null);
+              setMatchPhase('scoring');
+            } catch { setMatchPhase('scoring'); }
+          }} />
         </div>
       )}
 
@@ -1949,24 +2591,47 @@ export default function LiveScoring() {
           <AnimatePresence mode="wait">
             {activeTab === 'live' && (
               <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+
+                {/* YouTube Live Embed - visible to all */}
+                {liveLink && (
+                  <YouTubeLiveEmbed url={liveLink} />
+                )}
+
+                {/* Live Cricket Panel - visible to all */}
+                {match.status === 'live' && match.sport === 'cricket' && (
+                  <LiveCricketPanel
+                    score={score}
+                    match={match}
+                    refreshKey={`${score?.currentInningsData?.runs}-${score?.currentInningsData?.wickets}-${score?.currentInningsData?.totalBalls}`}
+                  />
+                )}
+
                 {match.status === 'live' && isScorer && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
-                      <div className="flex items-center gap-2">
-                        <meta.icon size={16} />
-                        <span className="text-sm font-semibold text-gray-700">Scorer Panel</span>
+                  <>
+                    {/* Transfer Scorer Panel */}
+                    <TransferScorerPanel matchId={matchId} match={match} currentUserId={user?._id} onUpdated={(updated) => setMatch(updated)} />
+
+                    {/* Live Link Manager */}
+                    <LiveLinkManager matchId={matchId} liveLink={liveLink} onUpdated={setLiveLink} />
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+                        <div className="flex items-center gap-2">
+                          <meta.icon size={16} />
+                          <span className="text-sm font-semibold text-gray-700">Scorer Panel</span>
+                        </div>
+                        <button onClick={handleUndo} disabled={events.length === 0}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 disabled:opacity-30 transition"><FiRotateCcw size={13} /> Undo</button>
                       </div>
-                      <button onClick={handleUndo} disabled={events.length === 0}
-                        className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 disabled:opacity-30 transition"><FiRotateCcw size={13} /> Undo</button>
+                      <div className={`p-5 ${submitting ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {submitting && (
+                          <div className="flex items-center justify-center gap-2 mb-3 text-xs text-indigo-500">
+                            <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> Saving...</div>
+                        )}
+                        {getScorerPanel()}
+                      </div>
                     </div>
-                    <div className={`p-5 ${submitting ? 'opacity-50 pointer-events-none' : ''}`}>
-                      {submitting && (
-                        <div className="flex items-center justify-center gap-2 mb-3 text-xs text-indigo-500">
-                          <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> Saving...</div>
-                      )}
-                      {getScorerPanel()}
-                    </div>
-                  </div>
+                  </>
                 )}
                 {match.status === 'live' && !isScorer && (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
