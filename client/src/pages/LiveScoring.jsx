@@ -1189,9 +1189,9 @@ function CricketScorecard({ score, match }) {
                     </thead>
                     <tbody>
                       {inn.fow.map((f, i) => (
-                        <tr key={i} className="border-b border-gray-100">
+                        <tr key={i} className="bg-white border-b border-gray-100">
                           <td className="py-2 pl-4 font-medium text-gray-800">{pn(f.batter)}</td>
-                          <td className="text-right px-3 font-bold">{f.runs}-{f.wicket}</td>
+                          <td className="text-right px-3 font-bold text-gray-900">{f.runs}-{f.wicket}</td>
                           <td className="text-right pr-4 text-gray-500">{f.overs}</td>
                         </tr>
                       ))}

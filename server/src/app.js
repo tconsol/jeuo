@@ -24,6 +24,9 @@ const { errorHandler, notFound } = require('./middleware/error');
 
 const app = express();
 
+// Trust reverse proxy (Cloud Run, GCP, etc.) — required for accurate IP-based rate limiting
+app.set('trust proxy', parseInt(process.env.TRUST_PROXY || '1'));
+
 // Security
 app.use(helmet());
 
@@ -44,12 +47,13 @@ app.use(cors({
   optionsSuccessStatus: 200,
 }));
 
-// Rate limiting
+// Rate limiting — defaults are permissive for production; tighten via env vars if needed
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 5000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true',
   message: { error: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);

@@ -4,11 +4,12 @@ const ctrl = require('../controllers/scoring.controller');
 const { authenticate } = require('../middleware/auth');
 const { requireSubscription } = require('../middleware/subscription');
 
-// Rate limiting for scoring events — max 30 events per minute per user
+// Rate limiting for scoring events — configurable via env, defaults allow ~5 events/sec per user
 const scoringLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
+  windowMs: parseInt(process.env.SCORING_RATE_WINDOW_MS) || 60 * 1000,
+  max: parseInt(process.env.SCORING_RATE_MAX) || 300,
   keyGenerator: (req) => `scoring_${req.user?._id || req.ip}`,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true',
   message: { success: false, message: 'Too many scoring events. Please slow down.' },
 });
 

@@ -3,7 +3,7 @@
  * Uses Web Audio API for real-time text-to-speech-like effects
  */
 
-import dragonThudUrl from '../assets/dragon-studio-thud-sound-effect-405470.mp3';
+import fahhSoundUrl from '../assets/fahhh_KcgAXfs.mp3';
 
 const DISMISSAL_LABELS = {
   bowled: 'Bowled!',
@@ -100,16 +100,16 @@ export const playSixSound = () => {
 };
 
 /**
- * Play wicket announcement using dragon thud sound + speech
+ * Play wicket announcement using faah sound + speech
  * @param {string} dismissalType - Type of dismissal
  */
 export const playWicketSound = (dismissalType = 'wicket_default') => {
   try {
-    const audio = new Audio(dragonThudUrl);
+    const audio = new Audio(fahhSoundUrl);
     audio.volume = 0.9;
     audio.play().catch(() => {});
   } catch (err) {
-    console.warn('Dragon sound failed:', err);
+    console.warn('Faah sound failed:', err);
   }
   const label = DISMISSAL_LABELS[dismissalType] || DISMISSAL_LABELS.wicket_default;
   speak(label, 1.1, 0.8);
