@@ -78,9 +78,7 @@ export default function App() {
           <ProtectedRoute><MyMatches /></ProtectedRoute>
         } />
         <Route path="/matches/:id" element={<MatchDetail />} />
-        <Route path="/scoring/:matchId" element={
-          <ProtectedRoute><LiveScoring /></ProtectedRoute>
-        } />
+        <Route path="/scoring/:matchId" element={<LiveScoring />} />
         <Route path="/tournaments" element={<Tournaments />} />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
         <Route path="/teams" element={

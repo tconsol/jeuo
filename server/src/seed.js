@@ -1027,6 +1027,18 @@ async function seed() {
       });
     };
 
+    const addPlayersSet = (team, striker, nonStriker, bowler, battingTeam, bowlingTeam) => {
+      seq++;
+      cricketEvents.push({
+        match: m1._id, scorer: scorer._id,
+        idempotencyKey: `ev_m1_${seq}`,
+        sequence: seq, sport: 'cricket', type: 'players_set',
+        team,
+        payload: { striker, nonStriker, bowler, battingTeam, bowlingTeam },
+        clientTimestamp: ts, syncedAt: ts,
+      });
+    };
+
     const addEndInnings = (team, inningsNum) => {
       seq++;
       cricketEvents.push({
@@ -1041,6 +1053,7 @@ async function seed() {
     // --- FIRST INNINGS: Thunder Strikers bat (142/3 in 10 overs) ---
     // Bowlers: c9=Vivek, c10=Ajay, p5=Rahul, p6=Ananya, p7=Vikram
     // Batsmen: p1=Arjun(62), c1=Sanjay(38), p2=Meera(22), c6=Tarun(12*), c5=Ravi(4*)
+    addPlayersSet('home', p1._id, c1._id, c10._id, 'home', 'away');
 
     // Over 0: Bowler c10 (Ajay)
     addDelivery('home', p1._id, c10._id, 0, 1, 1);
@@ -1140,6 +1153,7 @@ async function seed() {
     // --- SECOND INNINGS: Royal Challengers bat (128/7 in 10 overs) ---
     // Bowlers: c2=Deepak, c3=Mohit, c8=Suresh, p2=Meera, c5=Ravi
     // Batsmen: c9=Vivek(35), c10=Ajay(28), p5=Rahul(25), p7=Vikram(18), p6=Ananya(10*)
+    addPlayersSet('away', c9._id, c10._id, c2._id, 'away', 'home');
 
     // Over 0: Bowler c2 (Deepak)
     addDelivery('away', c9._id, c2._id, 0, 1, 4);

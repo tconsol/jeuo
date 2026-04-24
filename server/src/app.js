@@ -50,13 +50,27 @@ app.use(cors({
 // Rate limiting — defaults are permissive for production; tighten via env vars if needed
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 5000,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 10000,
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.DISABLE_RATE_LIMIT === 'true',
   message: { error: 'Too many requests, please try again later.' },
 });
+
+// Stricter rate limiting for auth endpoints to prevent abuse
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true',
+  message: { error: 'Too many requests, please try again later.' },
+});
+
 app.use('/api/', limiter);
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/send-otp', authLimiter);
+app.use('/api/v1/auth/verify-otp', authLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

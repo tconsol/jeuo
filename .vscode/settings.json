@@ -1,5 +1,6 @@
 {
   "files.associations": {
     ".dockerignore": "plaintext"
-  }
+  },
+  "js/ts.tsdk.path": "mobileapp/node_modules/typescript"
 }

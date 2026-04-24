@@ -486,14 +486,70 @@ function CustomSelect({ value, onChange, options, placeholder, disabled = [], la
 
 /* PLAYER SELECTION (cricket) */
 
-function PlayerSelection({ match, toss, onConfirm }) {
+/* INNINGS COMPLETE MODAL — shown after innings auto-completes (overs/wickets) */
+function InningsCompleteModal({ inningsData, match, onStartSecondInnings, submitting }) {
+  const battingTeamKey = inningsData?.battingTeam || 'home';
+  const bowlingTeamKey = battingTeamKey === 'home' ? 'away' : 'home';
+  const battingTeamName = match?.teams?.[battingTeamKey]?.name || 'Batting Team';
+  const bowlingTeamName = match?.teams?.[bowlingTeamKey]?.name || 'Bowling Team';
+  const runs = inningsData?.runs ?? 0;
+  const wickets = inningsData?.wickets ?? 0;
+  const overs = inningsData?.overs ?? 0;
+  const balls = inningsData?.balls ?? 0;
+  const target = runs + 1;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-white rounded-2xl shadow-xl border border-indigo-100 overflow-hidden"
+    >
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 text-center">
+        <div className="text-3xl mb-1">🏏</div>
+        <h3 className="text-xl font-extrabold text-white">Innings Complete!</h3>
+        <p className="text-indigo-200 text-sm mt-1">{battingTeamName} have finished their innings</p>
+      </div>
+      <div className="p-6 space-y-4">
+        {/* Score summary */}
+        <div className="bg-indigo-50 rounded-xl p-4 text-center">
+          <p className="text-xs text-indigo-500 uppercase tracking-widest mb-1">{battingTeamName}</p>
+          <p className="text-5xl font-black text-indigo-700">{runs}<span className="text-2xl text-indigo-400">/{wickets}</span></p>
+          <p className="text-sm text-indigo-500 mt-1">{overs}.{balls} overs</p>
+        </div>
+        {/* Target */}
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <FiTarget size={18} className="text-amber-600 flex-shrink-0" />
+          <div>
+            <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Target for {bowlingTeamName}</p>
+            <p className="text-lg font-extrabold text-amber-700">{target} runs</p>
+          </div>
+        </div>
+        {/* CTA */}
+        <button
+          onClick={onStartSecondInnings}
+          disabled={submitting}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm hover:shadow-lg transition active:scale-95 disabled:opacity-50 mt-2"
+        >
+          <FiPlay size={15} />
+          {submitting ? 'Starting…' : 'Set Up 2nd Innings'}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function PlayerSelection({ match, toss, onConfirm, secondInnings, innings1BattingTeam }) {
   const [striker, setStriker] = useState('');
   const [nonStriker, setNonStriker] = useState('');
   const [bowler, setBowler] = useState('');
 
-  const battingTeamKey = toss.wonBy === 'home'
+  // For 2nd innings, the batting team flips
+  const tossBasedBattingTeam = toss.wonBy === 'home'
     ? (toss.decision === 'bat' ? 'home' : 'away')
     : (toss.decision === 'bat' ? 'away' : 'home');
+  const battingTeamKey = secondInnings
+    ? (innings1BattingTeam === 'home' ? 'away' : 'home')
+    : tossBasedBattingTeam;
   const bowlingTeamKey = battingTeamKey === 'home' ? 'away' : 'home';
 
   const battingPlayers = match.teams?.[battingTeamKey]?.players || [];
@@ -504,8 +560,13 @@ function PlayerSelection({ match, toss, onConfirm }) {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2"><FiUser size={18} /> Select Opening Players</h3>
-        <p className="text-indigo-200 text-xs mt-0.5">Choose opening batsmen and bowler</p>
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <FiUser size={18} />
+          {secondInnings ? '2nd Innings — Select Players' : 'Select Opening Players'}
+        </h3>
+        <p className="text-indigo-200 text-xs mt-0.5">
+          {secondInnings ? `${battingTeamName} will bat` : 'Choose opening batsmen and bowler'}
+        </p>
       </div>
       <div className="p-6 space-y-5">
         <CustomSelect
@@ -547,7 +608,7 @@ function PlayerSelection({ match, toss, onConfirm }) {
             bowlingTeam: bowlingTeamKey,
           })}
           className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm hover:shadow-lg transition active:scale-95 mt-2"
-        ><FiPlay size={15} /> Start Innings</button>
+        ><FiPlay size={15} /> {secondInnings ? 'Start 2nd Innings' : 'Start Innings'}</button>
       </div>
     </div>
   );
@@ -585,7 +646,7 @@ function ShotAreaPicker({ onSelect, onCancel }) {
 
 /* CRICKET SCORER PANEL */
 
-function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
+function CricketScorerPanel({ onEvent, match, score, undoSignal, disabled = false }) {
   const [showWicket, setShowWicket] = useState(false);
   const [showShotArea, setShowShotArea] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(null); // 'wide'|'no_ball'|'bye'|'leg_bye'
@@ -595,6 +656,7 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
   const [runOutRuns, setRunOutRuns] = useState(0);
   const [showNextBowler, setShowNextBowler] = useState(false);
   const [nextBowler, setNextBowler] = useState('');
+  const [showEndInningsConfirm, setShowEndInningsConfirm] = useState(false);
 
   // Reset all modal states when undo is triggered
   useEffect(() => {
@@ -618,15 +680,29 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
   const allPlayers = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
   const currentOverBalls = innings?.currentOver || [];
 
-  // Auto-detect when over completes (after 6 balls) — prompt for next bowler
+  // Get max overs for this match
+  const maxOvers = match?.format?.overs || 20;
+
+  // Auto-detect when over completes (after 6 balls) — prompt for next bowler or end innings
   const prevOversRef = useRef(innings?.overs ?? 0);
   useEffect(() => {
     const currentOvers = innings?.overs ?? 0;
     if (currentOvers > prevOversRef.current && !showNextBowler) {
-      setShowNextBowler(true);
+      // Check if we've reached max overs
+      if (currentOvers >= maxOvers) {
+        // Reached max overs - end innings automatically
+        setShowNextBowler(false);
+        // Trigger innings complete modal
+        if (!showWicket && !showShotArea && !showExtrasModal) {
+          // Will be caught by the polling logic to show innings complete modal
+        }
+      } else {
+        // More overs to go - ask for next bowler
+        setShowNextBowler(true);
+      }
     }
     prevOversRef.current = currentOvers;
-  }, [innings?.overs, showNextBowler]);
+  }, [innings?.overs, showNextBowler, maxOvers, showWicket, showShotArea, showExtrasModal]);
 
   const playerName = (id) => {
     if (!id) return '-';
@@ -694,7 +770,7 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
   const EXTRA_LABELS = { wide: 'Wide', no_ball: 'No Ball', bye: 'Bye', leg_bye: 'Leg Bye' };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
 
       {/* Now Batting / Bowling bar */}
       {(striker || nonStriker || currentBowler) && (
@@ -881,40 +957,65 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 space-y-4"
           >
-            <p className="text-sm font-bold text-indigo-800">
-              {innings?.currentOver?.length > 0 ? 'End Over — Select Next Bowler' : 'Over Complete — Select Next Bowler'}
-            </p>
-            <CustomSelect
-              value={nextBowler}
-              onChange={setNextBowler}
-              options={bowlingPlayers.filter(p => (p._id || p)?.toString() !== currentBowler?.toString())}
-              placeholder="Select next bowler..."
-              disabled={[]}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  if (!nextBowler) return;
-                  // Only send end_over if the over hasn't already auto-completed
-                  if (innings?.currentOver?.length > 0) {
-                    await onEvent({ type: 'end_over' });
-                  }
-                  await onEvent({ type: 'players_set', data: { bowler: nextBowler } });
-                  setShowNextBowler(false);
-                  setNextBowler('');
-                }}
-                disabled={!nextBowler}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold disabled:opacity-40 transition active:scale-95"
-              >
-                <FiCheck size={15} /> Confirm
-              </button>
-              <button
-                onClick={() => { setShowNextBowler(false); setNextBowler(''); }}
-                className="px-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition"
-              >
-                Cancel
-              </button>
-            </div>
+            {innings?.overs >= maxOvers ? (
+              // Max overs reached - show end innings option
+              <>
+                <p className="text-sm font-bold text-orange-800">
+                  ⚠️ Maximum Overs Reached
+                </p>
+                <p className="text-xs text-orange-600">
+                  {maxOvers} overs completed. This innings is complete.
+                </p>
+                <button
+                  onClick={async () => {
+                    setShowNextBowler(false);
+                    setNextBowler('');
+                    await onEvent({ type: 'end_innings' });
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold transition active:scale-95"
+                >
+                  <FiFlag size={15} /> End Innings
+                </button>
+              </>
+            ) : (
+              // More overs to go - select next bowler
+              <>
+                <p className="text-sm font-bold text-indigo-800">
+                  {innings?.currentOver?.length > 0 ? 'End Over — Select Next Bowler' : 'Over Complete — Select Next Bowler'}
+                </p>
+                <CustomSelect
+                  value={nextBowler}
+                  onChange={setNextBowler}
+                  options={bowlingPlayers.filter(p => (p._id || p)?.toString() !== currentBowler?.toString())}
+                  placeholder="Select next bowler..."
+                  disabled={[]}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!nextBowler) return;
+                      // Only send end_over if the over hasn't already auto-completed
+                      if (innings?.currentOver?.length > 0) {
+                        await onEvent({ type: 'end_over' });
+                      }
+                      await onEvent({ type: 'players_set', data: { bowler: nextBowler } });
+                      setShowNextBowler(false);
+                      setNextBowler('');
+                    }}
+                    disabled={!nextBowler}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold disabled:opacity-40 transition active:scale-95"
+                  >
+                    <FiCheck size={15} /> Confirm
+                  </button>
+                  <button
+                    onClick={() => { setShowNextBowler(false); setNextBowler(''); }}
+                    className="px-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -925,15 +1026,26 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
           <div>
             <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-widest">Runs</p>
             <div className="grid grid-cols-6 gap-2">
-              {[0, 1, 2, 3, 4, 6].map((r) => (
-                <button key={r} onClick={() => handleRunClick(r)}
-                  className={`py-3.5 rounded-xl text-lg font-bold transition-all active:scale-95 shadow-sm ${
-                    r === 4 ? 'bg-blue-500 hover:bg-blue-600 text-white' :
-                    r === 6 ? 'bg-purple-500 hover:bg-purple-600 text-white' :
-                    'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}>{r}</button>
-              ))}
+              {[0, 1, 2, 3, 4, 6].map((r) => {
+                // Disable buttons if current over is complete (6 balls)
+                const ballsInCurrentOver = (innings?.currentOver || []).length;
+                const isOverComplete = ballsInCurrentOver >= 6;
+                const isDisabled = isOverComplete;
+                
+                return (
+                  <button key={r} onClick={() => handleRunClick(r)} disabled={isDisabled}
+                    className={`py-3.5 rounded-xl text-lg font-bold transition-all active:scale-95 shadow-sm ${
+                      isDisabled ? 'opacity-40 cursor-not-allowed bg-gray-400 text-gray-600' :
+                      r === 4 ? 'bg-blue-500 hover:bg-blue-600 text-white' :
+                      r === 6 ? 'bg-purple-500 hover:bg-purple-600 text-white' :
+                      'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}>{r}</button>
+                );
+              })}
             </div>
+            {((innings?.currentOver || []).length >= 6) && (
+              <p className="text-xs text-red-500 font-semibold mt-2 text-center">✓ Over complete. Select next bowler to continue.</p>
+            )}
           </div>
 
           {/* Extras */}
@@ -959,11 +1071,48 @@ function CricketScorerPanel({ onEvent, match, score, undoSignal }) {
               className="px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition active:scale-95">
               End Over
             </button>
-            <button onClick={() => onEvent({ type: 'end_innings' })}
+            <button onClick={() => setShowEndInningsConfirm(true)}
               className="px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95">
               End Innings
             </button>
           </div>
+
+          {/* End Innings confirmation */}
+          <AnimatePresence>
+            {showEndInningsConfirm && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-3"
+              >
+                <p className="text-sm font-bold text-red-800 flex items-center gap-2">
+                  <FiAlertTriangle size={15} /> End Innings?
+                </p>
+                <p className="text-xs text-red-600">
+                  {innings?.battingTeam ? match?.teams?.[innings.battingTeam]?.name : 'Batting team'} has scored{' '}
+                  <strong>{innings?.runs ?? 0}/{innings?.wickets ?? 0}</strong> in{' '}
+                  {innings?.overs ?? 0}.{innings?.balls ?? 0} overs.
+                  {innings?.isComplete ? ' (Innings already complete.)' : ' This will end the innings early.'}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setShowEndInningsConfirm(false);
+                      await onEvent({ type: 'end_innings' });
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition active:scale-95"
+                  >
+                    <FiFlag size={13} /> Yes, End Innings
+                  </button>
+                  <button
+                    onClick={() => setShowEndInningsConfirm(false)}
+                    className="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>
@@ -1039,8 +1188,20 @@ function GenericScorerPanel({ onEvent, match }) {
 function CricketScorecard({ score, match }) {
   const allInnings = [...(score?.innings || [])];
   const current = score?.currentInningsData;
-  if (current && !current.isComplete) allInnings.push(current);
-  if (allInnings.length === 0) return <p className="text-center text-gray-400 text-sm py-8">No innings data yet</p>;
+  // Always include current innings (completed or live) for proper scorecard display
+  if (current && !allInnings.some(i => i._id === current._id || (i.battingTeam === current.battingTeam && i.isComplete === current.isComplete))) {
+    allInnings.push(current);
+  }
+  
+  // Fallback: if no innings data and match is completed, show a helpful message
+  if (allInnings.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-2">
+        <p className="text-gray-400 text-sm font-medium">Scorecard data loading...</p>
+        <p className="text-xs text-gray-300">Try refreshing the page if data doesn't appear</p>
+      </div>
+    );
+  }
 
   const allPlayers = [...(match?.teams?.home?.players || []), ...(match?.teams?.away?.players || [])];
   const pn = (id) => {
@@ -1480,20 +1641,34 @@ function LiveCricketPanel({ score, match, refreshKey }) {
   return (
     <div className="space-y-3" key={refreshKey}>
       {/* Score Card */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-5 text-white shadow-lg">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold text-indigo-200">CURRENT INNINGS</div>
-          <div className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">{overStr} Ov</div>
+      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 rounded-3xl p-6 text-white shadow-2xl border border-indigo-400/30">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm font-extrabold text-indigo-200 uppercase tracking-widest">CURRENT INNINGS</div>
+          <div className="text-xs font-bold bg-white/20 px-4 py-2 rounded-full backdrop-blur">{overStr} Ov</div>
         </div>
         <motion.div
           key={`score-${innings.runs}-${innings.wickets}`}
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 0.4 }}
-          className="text-center"
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-3"
         >
-          <div className="flex items-end justify-center gap-3">
-            <span className="text-6xl font-black tabular-nums">{innings.runs || 0}</span>
-            <span className="text-3xl font-bold text-indigo-300 mb-2">/{innings.wickets || 0}</span>
+          <div className="flex items-end justify-center gap-4">
+            <motion.span 
+              className="text-8xl font-black tabular-nums drop-shadow-2xl"
+              style={{
+                textShadow: '0 0 30px rgba(255,255,255,0.4), 0 0 60px rgba(79,172,254,0.3)'
+              }}
+            >
+              {innings.runs || 0}
+            </motion.span>
+            <motion.span 
+              className="text-5xl font-extrabold text-indigo-200 mb-3 drop-shadow-lg"
+              style={{
+                textShadow: '0 0 20px rgba(255,255,255,0.2)'
+              }}
+            >
+              /{innings.wickets || 0}
+            </motion.span>
           </div>
         </motion.div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
@@ -2071,6 +2246,777 @@ function TransferScorerPanel({ matchId, match, currentUserId, onUpdated }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   VIEWER SCORE HERO  (IPL-style, public — no login needed)
+   ═══════════════════════════════════════════════════════════ */
+function ViewerScoreHero({ match, score }) {
+  const home = match?.teams?.home;
+  const away = match?.teams?.away;
+  const innings = score?.currentInningsData;
+  const allInnings = score?.innings || [];
+
+  // For completed matches, get the final scores from all innings
+  const getScore = (teamKey) => {
+    // First, check all completed innings
+    const teamInnings = allInnings.filter(i => i.battingTeam === teamKey);
+    if (teamInnings.length > 0) {
+      const latestInning = teamInnings[teamInnings.length - 1];
+      const ov = `${Math.floor((latestInning.totalBalls || 0) / 6)}.${(latestInning.totalBalls || 0) % 6}`;
+      return { 
+        runs: latestInning.runs || 0, 
+        wkts: latestInning.wickets || 0, 
+        overs: ov, 
+        done: true,
+        isComplete: true
+      };
+    }
+    
+    // If match is completed but no innings found in array, check currentInningsData
+    if (match?.status === 'completed' && innings?.battingTeam === teamKey && innings?.isComplete) {
+      const ov = `${Math.floor((innings.totalBalls || 0) / 6)}.${(innings.totalBalls || 0) % 6}`;
+      return { 
+        runs: innings.runs || 0, 
+        wkts: innings.wickets || 0, 
+        overs: ov, 
+        done: true,
+        isComplete: true
+      };
+    }
+    
+    // For live matches, show current innings
+    if (innings?.battingTeam === teamKey) {
+      const ov = `${Math.floor((innings.totalBalls || 0) / 6)}.${(innings.totalBalls || 0) % 6}`;
+      return { 
+        runs: innings.runs || 0, 
+        wkts: innings.wickets || 0, 
+        overs: ov, 
+        done: false, 
+        batting: true,
+        isComplete: innings.isComplete
+      };
+    }
+    
+    return null;
+  };
+
+  const hScore = getScore('home');
+  const aScore = getScore('away');
+  const result = match?.result?.summary;
+  const winner = match?.result?.winner;
+  const battingTeam = innings?.battingTeam;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-900">
+        <p className="text-xs text-gray-400 truncate">
+          {[match?.format?.name, match?.venue?.name].filter(Boolean).join(' · ') || 'Live Match'}
+        </p>
+        {match?.status === 'live' ? (
+          <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded-full border border-red-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />LIVE
+          </span>
+        ) : match?.status === 'completed' ? (
+          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wide">Final</span>
+        ) : null}
+      </div>
+
+      {/* Teams */}
+      <div className="flex items-stretch">
+        <div className="flex-1 px-4 py-4 space-y-4 min-w-0">
+          {/* Home */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${winner === 'home' ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+                <GiCricketBat size={18} className={winner === 'home' ? 'text-indigo-600' : 'text-gray-400'} />
+              </div>
+              <div className="min-w-0">
+                <p className={`font-bold text-sm truncate ${winner === 'home' || battingTeam === 'home' ? 'text-gray-900' : 'text-gray-600'}`}>
+                  {home?.name || 'Home'}
+                </p>
+                {battingTeam === 'home' && hScore?.batting && (
+                  <p className="text-[11px] text-indigo-500 font-semibold">batting</p>
+                )}
+              </div>
+            </div>
+            {hScore ? (
+              <p className={`text-right font-bold text-base shrink-0 tabular-nums ${winner === 'home' ? 'text-gray-900' : 'text-gray-700'}`}>
+                {hScore.runs}<span className="text-gray-400 font-normal">/{hScore.wkts}</span>
+                <span className="text-xs font-normal text-gray-400 ml-1">({hScore.overs})</span>
+                {hScore.batting && <span className="text-indigo-400 font-bold"> *</span>}
+              </p>
+            ) : (
+              <span className="text-gray-300 text-sm shrink-0">Yet to bat</span>
+            )}
+          </div>
+
+          {/* Away */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${winner === 'away' ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                <GiCricketBat size={18} className={winner === 'away' ? 'text-orange-500' : 'text-gray-400'} />
+              </div>
+              <div className="min-w-0">
+                <p className={`font-bold text-sm truncate ${winner === 'away' || battingTeam === 'away' ? 'text-gray-900' : 'text-gray-600'}`}>
+                  {away?.name || 'Away'}
+                </p>
+                {battingTeam === 'away' && aScore?.batting && (
+                  <p className="text-[11px] text-indigo-500 font-semibold">batting</p>
+                )}
+              </div>
+            </div>
+            {aScore ? (
+              <p className={`text-right font-bold text-base shrink-0 tabular-nums ${winner === 'away' ? 'text-gray-900' : 'text-gray-700'}`}>
+                {aScore.runs}<span className="text-gray-400 font-normal">/{aScore.wkts}</span>
+                <span className="text-xs font-normal text-gray-400 ml-1">({aScore.overs})</span>
+                {aScore.batting && <span className="text-indigo-400 font-bold"> *</span>}
+              </p>
+            ) : (
+              <span className="text-gray-300 text-sm shrink-0">Yet to bat</span>
+            )}
+          </div>
+        </div>
+
+        {/* Right divider + result */}
+        <div className="w-px bg-gray-100 shrink-0" />
+        <div className="w-28 shrink-0 flex flex-col items-center justify-center text-center px-3">
+          {result ? (
+            <>
+              <p className="text-sm font-bold text-orange-500 leading-tight">
+                {result.includes(' by ') ? result.split(' by ')[0] : result}
+              </p>
+              {result.includes(' by ') && (
+                <p className="text-xs text-gray-400 mt-0.5">by {result.split(' by ')[1]}</p>
+              )}
+            </>
+          ) : innings?.target ? (
+            <>
+              <p className="text-[11px] text-gray-400 font-medium">Need</p>
+              <p className="text-2xl font-black text-indigo-600 leading-none">
+                {Math.max(0, innings.target - (innings.runs || 0))}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                from {Math.max(0, (match?.format?.overs || 20) * 6 - (innings.totalBalls || 0))} balls
+              </p>
+            </>
+          ) : match?.status === 'live' ? (
+            <p className="text-[11px] text-gray-400">In Progress</p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS for post-match viewer components
+   ═══════════════════════════════════════════════════════════ */
+function buildPlayerMap(match) {
+  const map = {};
+  for (const p of match?.teams?.home?.players || []) {
+    const id = p._id?.toString() || p.toString();
+    if (typeof p === 'object') map[id] = p;
+  }
+  for (const p of match?.teams?.away?.players || []) {
+    const id = p._id?.toString() || p.toString();
+    if (typeof p === 'object') map[id] = p;
+  }
+  return map;
+}
+
+function extrasTotal(extras) {
+  if (!extras) return 0;
+  return (extras.wides || 0) + (extras.noBalls || 0) + (extras.byes || 0) + (extras.legByes || 0) + (extras.penalties || 0);
+}
+
+/* Manhattan Chart — runs per over, SVG */
+function ManhattanChart({ innings, color = '#6366f1' }) {
+  const data = (innings?.overHistory || []).map((ov, i) => ({
+    over: i + 1, runs: ov.runs || 0, wickets: ov.wickets || 0,
+  }));
+  if (!data.length) return <div className="flex items-center justify-center h-28 text-gray-400 text-xs">No over data</div>;
+  const maxRuns = Math.max(...data.map(d => d.runs), 1);
+  const W = 300; const H = 110;
+  const barW = W / data.length - 1;
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 18}`} className="w-full h-auto">
+      {[0, Math.round(maxRuns / 2), maxRuns].map((v, i) => (
+        <g key={i}>
+          <line x1={0} y1={H - (v / maxRuns) * H} x2={W} y2={H - (v / maxRuns) * H} stroke="#f3f4f6" strokeWidth={0.8} />
+          <text x={-1} y={H - (v / maxRuns) * H + 3} textAnchor="end" fontSize={6.5} fill="#d1d5db">{v}</text>
+        </g>
+      ))}
+      {data.map((d, i) => {
+        const x = i * (W / data.length);
+        const h = Math.max((d.runs / maxRuns) * H, 2);
+        const y = H - h;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={h} fill={d.wickets > 0 ? '#ef4444' : color} rx={1.5} opacity={0.85} />
+            {d.wickets > 0 && <circle cx={x + barW / 2} cy={y - 4} r={2.5} fill="#ef4444" />}
+            <text x={x + barW / 2} y={H + 12} textAnchor="middle" fontSize={6.5} fill="#9ca3af">{d.over}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* Worm Chart — cumulative runs, SVG */
+function WormChart({ allInnings, match, maxOvers }) {
+  const buildCum = (inn) => {
+    if (!inn?.overHistory?.length) return [];
+    let cum = 0;
+    return [{ over: 0, runs: 0 }, ...inn.overHistory.map((ov, i) => { cum += ov.runs || 0; return { over: i + 1, runs: cum }; })];
+  };
+  const homeInn = allInnings?.find(i => i.battingTeam === 'home');
+  const awayInn = allInnings?.find(i => i.battingTeam === 'away');
+  const w1 = buildCum(homeInn); const w2 = buildCum(awayInn);
+  if (!w1.length && !w2.length) return <div className="flex items-center justify-center h-28 text-gray-400 text-xs">No over data</div>;
+  const maxOv = maxOvers || Math.max(w1.length, w2.length, 2);
+  const maxR = Math.max(...w1.map(d => d.runs), ...w2.map(d => d.runs), 10);
+  const W = 300; const H = 130;
+  const sx = (ov) => (ov / maxOv) * W;
+  const sy = (r) => H - (r / maxR) * H;
+  const path = (data) => data.length < 2 ? '' : data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${sx(d.over).toFixed(1)} ${sy(d.runs).toFixed(1)}`).join(' ');
+  const ticks = Array.from({ length: Math.min(maxOv + 1, 11) }, (_, i) => Math.round((i * maxOv) / 10));
+  return (
+    <svg viewBox={`-18 0 ${W + 20} ${H + 18}`} className="w-full h-auto">
+      {[0, maxR / 4, maxR / 2, (maxR * 3) / 4, maxR].map((v, i) => (
+        <g key={i}>
+          <line x1={0} y1={sy(v)} x2={W} y2={sy(v)} stroke="#f3f4f6" strokeWidth={0.8} />
+          <text x={-2} y={sy(v) + 3} textAnchor="end" fontSize={6.5} fill="#d1d5db">{Math.round(v)}</text>
+        </g>
+      ))}
+      {w1.length > 1 && <path d={path(w1)} fill="none" stroke="#6366f1" strokeWidth={2} strokeLinejoin="round" />}
+      {w2.length > 1 && <path d={path(w2)} fill="none" stroke="#f97316" strokeWidth={2} strokeLinejoin="round" />}
+      {ticks.map(ov => (
+        <text key={ov} x={sx(ov)} y={H + 12} textAnchor="middle" fontSize={6.5} fill="#9ca3af">{ov}</text>
+      ))}
+    </svg>
+  );
+}
+
+/* Summary Tab */
+function SummaryTab({ match, score }) {
+  const allInnings = score?.innings || [];
+  const playerMap = buildPlayerMap(match);
+  const homeTeam = match?.teams?.home?.name || 'Home';
+  const awayTeam = match?.teams?.away?.name || 'Away';
+  const pom = match?.result?.playerOfMatch;
+
+  const getTopBatters = (inn, n = 3) =>
+    Object.entries(inn?.battingCard || {})
+      .map(([id, s]) => ({ ...s, id, player: playerMap[id] }))
+      .sort((a, b) => b.runs - a.runs || b.balls - a.balls)
+      .slice(0, n);
+
+  const getTopBowler = (inn) => {
+    const bowlers = Object.entries(inn?.bowlingCard || {})
+      .map(([id, s]) => ({ ...s, id, player: playerMap[id] }))
+      .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs);
+    return bowlers[0] || null;
+  };
+
+  return (
+    <div className="space-y-3">
+      {pom && (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-4">
+          <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-3">🏆 Player of the Match</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <span className="text-xl font-black text-amber-600">{(pom.name || 'P')[0]}</span>
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-base">{pom.name}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Outstanding Performance</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {allInnings.map((inn, idx) => {
+        const teamKey = inn.battingTeam;
+        const teamName = teamKey === 'home' ? homeTeam : awayTeam;
+        const innsLabel = allInnings.length > 1 ? ` · ${idx + 1}${idx === 0 ? 'st' : 'nd'} Innings` : '';
+        const topBats = getTopBatters(inn, 3);
+        const topBowl = getTopBowler(inn);
+        const teamColor = teamKey === 'home' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-500';
+        return (
+          <div key={idx} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-900 flex items-center justify-between">
+              <p className="text-xs font-bold text-white">{teamName}{innsLabel}</p>
+              <p className="text-xs text-gray-400 font-mono">{inn.runs}/{inn.wickets} ({Math.floor((inn.totalBalls||0)/6)}.{(inn.totalBalls||0)%6})</p>
+            </div>
+            <div className="p-4 space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Top Batters</p>
+              {topBats.length === 0 && <p className="text-xs text-gray-400 italic">No batting data</p>}
+              {topBats.map((b, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${teamColor}`}>
+                    {(b.player?.name || '?')[0]}
+                  </div>
+                  <p className="text-sm font-medium text-gray-800 flex-1 truncate">{b.player?.name || 'Unknown'}</p>
+                  <p className="text-sm font-bold text-gray-900 tabular-nums">{b.runs}<span className="text-gray-400 font-normal text-xs">({b.balls})</span></p>
+                  <p className="text-[11px] text-gray-400 w-14 text-right tabular-nums">SR {((b.runs||0)/(b.balls||1)*100).toFixed(0)}</p>
+                </div>
+              ))}
+              {topBowl && (
+                <div className="border-t border-gray-100 mt-3 pt-3">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Best Bowler</p>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-red-500">{(topBowl.player?.name || '?')[0]}</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-800 flex-1 truncate">{topBowl.player?.name || 'Unknown'}</p>
+                    <p className="text-sm font-bold text-gray-900 tabular-nums">{topBowl.wickets}/<span className="text-gray-500">{topBowl.runs}</span></p>
+                    <p className="text-[11px] text-gray-400 w-14 text-right tabular-nums">{Math.floor((topBowl.balls||0)/6)}.{(topBowl.balls||0)%6} ov</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      {allInnings.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <p className="text-gray-400 text-sm">Summary data loading...</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Scorecard Tab */
+function ScorecardTab({ match, score }) {
+  const allInnings = score?.innings || [];
+  const [selectedTeam, setSelectedTeam] = useState('home');
+  const playerMap = buildPlayerMap(match);
+  const inn = allInnings.find(i => i.battingTeam === selectedTeam) || null;
+
+  const getDismissal = (fow, pm) => {
+    if (!fow) return 'not out';
+    const { howOut, bowler, fielder } = fow;
+    const bn = bowler ? (pm[bowler?.toString()]?.name || 'unknown') : '';
+    const fn = fielder ? (pm[fielder?.toString()]?.name || '') : '';
+    switch (howOut) {
+      case 'bowled': return `b ${bn}`;
+      case 'caught': return `c ${fn} b ${bn}`;
+      case 'lbw': return `lbw b ${bn}`;
+      case 'run_out': return `run out (${fn})`;
+      case 'stumped': return `st ${fn} b ${bn}`;
+      case 'hit_wicket': return `hit wicket b ${bn}`;
+      default: return howOut || 'out';
+    }
+  };
+
+  const getBattingOrder = (innings) => {
+    if (!innings?.battingCard) return [];
+    const bc = innings.battingCard;
+    const fowMap = {};
+    (innings.fow || []).forEach(f => { fowMap[f.batter?.toString()] = f; });
+    const outBatters = (innings.fow || [])
+      .sort((a, b) => a.wicket - b.wicket)
+      .map(f => { const id = f.batter?.toString(); return bc[id] ? { id, ...bc[id], isOut: true, fowInfo: f } : null; })
+      .filter(Boolean);
+    const outIds = new Set(outBatters.map(b => b.id));
+    const notOutBatters = Object.entries(bc)
+      .filter(([id]) => !outIds.has(id))
+      .map(([id, stats]) => ({ id, ...stats, isOut: false, fowInfo: null }));
+    return [...outBatters, ...notOutBatters];
+  };
+
+  const getBowlingOrder = (innings) => {
+    if (!innings?.bowlingCard) return [];
+    return Object.entries(innings.bowlingCard)
+      .map(([id, stats]) => ({ id, ...stats }))
+      .sort((a, b) => (b.balls || 0) - (a.balls || 0));
+  };
+
+  const battingOrder = getBattingOrder(inn);
+  const bowlingOrder = getBowlingOrder(inn);
+  const teamPlayers = selectedTeam === 'home' ? (match?.teams?.home?.players || []) : (match?.teams?.away?.players || []);
+  const battedIds = new Set(battingOrder.map(b => b.id));
+  const didNotBat = teamPlayers.filter(p => !battedIds.has(p._id?.toString()));
+  const exTotal = inn ? (inn.extras?.total ?? extrasTotal(inn.extras)) : 0;
+
+  const colW = 'w-9';
+
+  return (
+    <div className="space-y-3">
+      {/* Team toggle */}
+      <div className="flex gap-2 bg-white rounded-2xl p-1.5 border border-gray-100 shadow-sm">
+        {['home', 'away'].map(team => (
+          <button key={team} onClick={() => setSelectedTeam(team)}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all truncate px-2 ${selectedTeam === team ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
+            {team === 'home' ? match?.teams?.home?.name : match?.teams?.away?.name}
+          </button>
+        ))}
+      </div>
+
+      {inn ? (
+        <>
+          {/* Batting table */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-900 flex items-center justify-between">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">Batting</p>
+              <p className="text-xs text-gray-400 font-mono">{inn.runs}/{inn.wickets} ({Math.floor((inn.totalBalls||0)/6)}.{(inn.totalBalls||0)%6} ov)</p>
+            </div>
+            <div className="flex items-center px-4 py-1.5 border-b border-gray-100 bg-gray-50">
+              <p className="text-[10px] font-bold text-gray-400 uppercase flex-1">Batter</p>
+              {['R','B','4s','6s','SR'].map(h => <p key={h} className={`text-[10px] font-bold text-gray-400 uppercase ${colW} text-right`}>{h}</p>)}
+            </div>
+            {battingOrder.map((b, i) => {
+              const player = playerMap[b.id];
+              const sr = ((b.runs||0)/(b.balls||1)*100).toFixed(0);
+              return (
+                <div key={i} className="px-4 py-2.5 border-b border-gray-50 last:border-0">
+                  <div className="flex items-start gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold leading-tight ${b.isOut ? 'text-gray-800' : 'text-indigo-600'}`}>
+                        {player?.name || 'Unknown'}{!b.isOut && <span className="text-xs ml-0.5 text-indigo-400">*</span>}
+                      </p>
+                      <p className="text-[11px] text-gray-400 leading-tight mt-0.5 truncate">{getDismissal(b.fowInfo, playerMap)}</p>
+                    </div>
+                    <div className="flex shrink-0">
+                      <p className={`text-sm font-bold text-gray-900 ${colW} text-right tabular-nums`}>{b.runs??0}</p>
+                      <p className={`text-sm text-gray-500 ${colW} text-right tabular-nums`}>{b.balls??0}</p>
+                      <p className={`text-sm text-gray-500 ${colW} text-right tabular-nums`}>{b.fours??0}</p>
+                      <p className={`text-sm text-gray-500 ${colW} text-right tabular-nums`}>{b.sixes??0}</p>
+                      <p className={`text-sm text-gray-400 ${colW} text-right tabular-nums`}>{sr}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/30">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Extras</span>
+                <span className="font-medium text-gray-700">
+                  {exTotal} (w {inn.extras?.wides||0}, nb {inn.extras?.noBalls||0}, b {inn.extras?.byes||0}, lb {inn.extras?.legByes||0})
+                </span>
+              </div>
+            </div>
+            <div className="px-4 py-2 border-t border-gray-100">
+              <div className="flex justify-between">
+                <span className="text-sm font-bold text-gray-900">Total</span>
+                <span className="text-sm font-bold text-gray-900">{inn.runs}/{inn.wickets} ({Math.floor((inn.totalBalls||0)/6)}.{(inn.totalBalls||0)%6} Ov)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Did Not Bat */}
+          {didNotBat.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Did Not Bat</p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-sm text-gray-600 leading-relaxed">{didNotBat.map(p => p.name).join(', ')}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Bowling table */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-900">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">Bowling</p>
+            </div>
+            <div className="flex items-center px-4 py-1.5 border-b border-gray-100 bg-gray-50">
+              <p className="text-[10px] font-bold text-gray-400 uppercase flex-1">Bowler</p>
+              {['O','M','R','W','Eco'].map(h => <p key={h} className={`text-[10px] font-bold text-gray-400 uppercase ${colW} text-right`}>{h}</p>)}
+            </div>
+            {bowlingOrder.length === 0 && (
+              <p className="text-xs text-gray-400 italic px-4 py-3">No bowling data</p>
+            )}
+            {bowlingOrder.map((b, i) => {
+              const player = playerMap[b.id];
+              const ov = `${Math.floor((b.balls||0)/6)}.${(b.balls||0)%6}`;
+              const eco = b.balls > 0 ? ((b.runs||0) / ((b.balls||1)/6)).toFixed(1) : '-';
+              return (
+                <div key={i} className="flex items-center px-4 py-2.5 border-b border-gray-50 last:border-0">
+                  <p className="text-sm font-medium text-gray-800 flex-1 truncate">{player?.name || 'Unknown'}</p>
+                  <p className={`text-sm text-gray-700 ${colW} text-right tabular-nums`}>{ov}</p>
+                  <p className={`text-sm text-gray-500 ${colW} text-right tabular-nums`}>{b.maidens??0}</p>
+                  <p className={`text-sm text-gray-700 ${colW} text-right tabular-nums`}>{b.runs??0}</p>
+                  <p className={`text-sm font-bold text-gray-900 ${colW} text-right tabular-nums`}>{b.wickets??0}</p>
+                  <p className={`text-sm text-gray-400 ${colW} text-right tabular-nums`}>{eco}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Fall of Wickets */}
+          {(inn.fow?.length > 0) && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Fall of Wickets</p>
+              </div>
+              <div className="p-3 flex flex-wrap gap-1.5">
+                {inn.fow.map((f, i) => {
+                  const p = playerMap[f.batter?.toString()];
+                  const firstName = p?.name?.split(' ')[0] || '?';
+                  return (
+                    <span key={i} className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 leading-tight">
+                      <span className="font-semibold text-gray-800">{f.runs}/{f.wicket}</span>
+                      <span className="text-gray-400"> ({firstName}, {f.overs})</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <p className="text-gray-400 text-sm">No innings data for this team</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Graphs Tab */
+function GraphsTab({ match, score }) {
+  const allInnings = score?.innings || [];
+  const [activeTeam, setActiveTeam] = useState('home');
+  const maxOvers = score?.oversPerInnings || match?.format?.overs || 20;
+  const homeInn = allInnings.find(i => i.battingTeam === 'home');
+  const awayInn = allInnings.find(i => i.battingTeam === 'away');
+  const activeInn = activeTeam === 'home' ? homeInn : awayInn;
+  const hasData = homeInn?.overHistory?.length > 0 || awayInn?.overHistory?.length > 0;
+
+  if (!hasData) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+        <p className="text-gray-400 text-sm">Graph data not available</p>
+        <p className="text-gray-300 text-xs mt-1">Over history is needed to show charts</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 bg-white rounded-2xl p-1.5 border border-gray-100 shadow-sm">
+        {['home', 'away'].map(team => (
+          <button key={team} onClick={() => setActiveTeam(team)}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all truncate px-2 ${activeTeam === team ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
+            {team === 'home' ? match?.teams?.home?.name : match?.teams?.away?.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <p className="text-sm font-bold text-gray-800">Manhattan</p>
+          <p className="text-xs text-gray-400 mt-0.5">Runs scored per over · <span className="inline-block w-2 h-2 rounded bg-red-400 mr-0.5" />wicket over</p>
+        </div>
+        <div className="px-4 py-3">
+          <ManhattanChart innings={activeInn} color={activeTeam === 'home' ? '#6366f1' : '#f97316'} />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-800">Worm</p>
+              <p className="text-xs text-gray-400 mt-0.5">Cumulative runs per over</p>
+            </div>
+            <div className="flex flex-col gap-1 text-right">
+              <div className="flex items-center gap-1.5 justify-end">
+                <span className="w-5 h-1 bg-indigo-500 rounded inline-block" />
+                <span className="text-[10px] text-gray-500 truncate max-w-[80px]">{match?.teams?.home?.name}</span>
+              </div>
+              <div className="flex items-center gap-1.5 justify-end">
+                <span className="w-5 h-1 bg-orange-400 rounded inline-block" />
+                <span className="text-[10px] text-gray-500 truncate max-w-[80px]">{match?.teams?.away?.name}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-3">
+          <WormChart allInnings={allInnings} match={match} maxOvers={maxOvers} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEWER MATCH LAYOUT  (audience — no scorer controls)
+   ═══════════════════════════════════════════════════════════ */
+function ViewerMatchLayout({ match, score, commentary, liveLink }) {
+  const isCricket = match?.sport === 'cricket';
+  const isCompleted = match?.status === 'completed';
+  const isLive = match?.status === 'live';
+
+  const tabs = isCricket
+    ? (isCompleted
+        ? ['summary', 'scorecard', 'graphs', 'commentary', 'info']
+        : ['live', 'scorecard', 'commentary', 'info'])
+    : ['live', 'info'];
+
+  const tabLabels = { live: 'Live', summary: 'Summary', scorecard: 'Scorecard', graphs: 'Graphs', commentary: 'Commentary', info: 'Info' };
+  const [viewerTab, setViewerTab] = useState(isCompleted && isCricket ? 'summary' : 'live');
+
+  return (
+    <div className="space-y-3">
+      {/* IPL-style score hero */}
+      <ViewerScoreHero match={match} score={score} />
+
+      {/* YouTube embed */}
+      {liveLink && <YouTubeLiveEmbed url={liveLink} />}
+
+      {/* Tab bar */}
+      {tabs.length > 1 && (
+        <div className="flex bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          {tabs.map(tab => (
+            <button key={tab} onClick={() => setViewerTab(tab)}
+              className={`flex-1 py-3 text-xs font-semibold transition-all ${viewerTab === tab ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              {tabLabels[tab]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Live tab */}
+      {viewerTab === 'live' && (
+        <div className="space-y-3">
+          {isCricket && isLive && score?.currentInningsData && (
+            <>
+              <LiveBattingSummary score={score} match={match} />
+              <LiveCricketPanel
+                score={score}
+                match={match}
+                refreshKey={`${score?.currentInningsData?.runs}-${score?.currentInningsData?.wickets}-${score?.currentInningsData?.totalBalls}`}
+              />
+            </>
+          )}
+          {commentary.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+                <span className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                  <FiMic size={14} className="text-indigo-500" /> Commentary
+                </span>
+              </div>
+              <div className="p-4">
+                <CommentaryFeed matchId={match?._id} commentary={commentary} match={match} score={score} />
+              </div>
+            </div>
+          )}
+          {!isCricket && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4">
+                <GenericScorecard score={score} match={match} sport={match?.sport} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Summary tab */}
+      {viewerTab === 'summary' && isCricket && (
+        <SummaryTab match={match} score={score} />
+      )}
+
+      {/* Scorecard tab */}
+      {viewerTab === 'scorecard' && isCricket && (
+        <ScorecardTab match={match} score={score} />
+      )}
+
+      {/* Graphs tab */}
+      {viewerTab === 'graphs' && isCricket && (
+        <GraphsTab match={match} score={score} />
+      )}
+
+      {/* Commentary tab */}
+      {viewerTab === 'commentary' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+            <span className="text-sm font-bold text-gray-800 flex items-center gap-2">
+              <FiMic size={14} className="text-indigo-500" /> Commentary
+            </span>
+          </div>
+          <div className="p-4">
+            {commentary.length > 0
+              ? <CommentaryFeed matchId={match?._id} commentary={commentary} match={match} score={score} />
+              : <p className="text-sm text-gray-400 text-center py-4">No commentary yet</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Info tab */}
+      {viewerTab === 'info' && (
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-900">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">Match Info</p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {[
+                { label: 'Format', value: match?.format?.name || match?.sport || '-' },
+                { label: 'Overs', value: match?.format?.overs ? `${match.format.overs} overs` : 'Unlimited' },
+                { label: 'Venue', value: match?.venue?.name || '-' },
+                { label: 'Date', value: match?.scheduledAt ? new Date(match.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                  <p className="text-sm text-gray-500">{row.label}</p>
+                  <p className="text-sm font-medium text-gray-800">{row.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {match?.toss?.wonBy && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 bg-gray-900">
+                <p className="text-xs font-bold text-white uppercase tracking-wider">Toss</p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">{match.toss.wonBy === 'home' ? match?.teams?.home?.name : match?.teams?.away?.name}</span>
+                  {' won the toss and elected to '}
+                  <span className="font-semibold">{match.toss.decision}</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {match?.result?.summary && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 bg-gray-900">
+                <p className="text-xs font-bold text-white uppercase tracking-wider">Result</p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-sm font-semibold text-indigo-600">{match.result.summary}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-900">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">Squads</p>
+            </div>
+            {['home', 'away'].map(teamKey => {
+              const team = match?.teams?.[teamKey];
+              return (
+                <div key={teamKey} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                  <p className="text-xs font-bold text-gray-500 mb-2">{team?.name}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {(team?.players || []).map(p => p.name || p).join(', ') || '-'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* MAIN LIVE SCORING PAGE */
 
 export default function LiveScoring() {
@@ -2088,6 +3034,8 @@ export default function LiveScoring() {
   const [animation, setAnimation] = useState(null);
   const [matchPhase, setMatchPhase] = useState('loading');
   const [liveLink, setLiveLink] = useState(null);
+  const [showInningsCompleteModal, setShowInningsCompleteModal] = useState(false);
+  const [completedInningsData, setCompletedInningsData] = useState(null);
 
   const isScorer = match?.scorers?.some(
     s => (s._id || s)?.toString() === user?._id
@@ -2120,9 +3068,28 @@ export default function LiveScoring() {
         else if (m.status === 'live') {
           const sc = payload.score;
           const innings = sc?.currentInningsData;
-          // Only check battingTeam — striker can be null mid-innings after wicket
-          if (!innings?.battingTeam) setMatchPhase('player_select');
-          else setMatchPhase('scoring');
+          if (m.sport === 'cricket' && sc) {
+            // After end_innings: currentInnings advanced but no battingTeam set yet → needs player select for 2nd innings
+            if (!innings?.battingTeam && (sc.innings?.length || 0) > 0) {
+              setMatchPhase('innings2_player_select');
+            }
+            // Innings auto-completed (overs/wickets) but scorer hasn't sent end_innings yet
+            else if (innings?.isComplete && (sc.innings?.length || 0) === 0) {
+              setCompletedInningsData(innings);
+              setShowInningsCompleteModal(true);
+              setMatchPhase('scoring');
+            }
+            // Normal: no batting team set → 1st innings player select
+            else if (!innings?.battingTeam) {
+              setMatchPhase('player_select');
+            }
+            else {
+              setMatchPhase('scoring');
+            }
+          } else {
+            if (!innings?.battingTeam) setMatchPhase('player_select');
+            else setMatchPhase('scoring');
+          }
         } else if (m.status === 'scheduled') {
           if (m.toss?.wonBy && m.toss?.decision) setMatchPhase('player_select');
           else setMatchPhase('toss');
@@ -2138,14 +3105,50 @@ export default function LiveScoring() {
     load();
   }, [matchId]);
 
+  // ─── Cricket innings transition detection ────────────────────────────────────
+  // Runs in response to score state changes — avoids stale closure issues in handleEvent.
+  useEffect(() => {
+    if (!score || !match || match.sport !== 'cricket') return;
+
+    const batting = score.currentInningsData?.battingTeam;
+    const archivedCount = score.innings?.length || 0;
+    const isComplete = score.currentInningsData?.isComplete;
+    const matchDone = match.status === 'completed';
+
+    // Match just finished (auto-end from server)
+    if (matchDone && matchPhase !== 'completed') {
+      setMatchPhase('completed');
+      setShowInningsCompleteModal(false);
+      return;
+    }
+
+    if (!isScorer || matchDone) return;
+
+    // Blank batting team + at least 1 archived innings → 2nd innings needs player setup
+    if (batting == null && archivedCount > 0 && matchPhase !== 'innings2_player_select') {
+      setMatchPhase('innings2_player_select');
+      setShowInningsCompleteModal(false);
+      return;
+    }
+
+    // 1st innings auto-completed (overs/wickets) but end_innings not yet sent → show modal
+    if (isComplete && archivedCount === 0 && !showInningsCompleteModal && matchPhase === 'scoring') {
+      setCompletedInningsData(score.currentInningsData);
+      setShowInningsCompleteModal(true);
+    }
+  }, [score, match, isScorer, matchPhase, showInningsCompleteModal]);
+
   // Preload sounds and setup real-time polling for data updates
+  const socketConnectedRef = useRef(false);
+
   useEffect(() => {
     preloadSounds();
 
-    if (!matchId || !match?.status === 'live') return;
+    if (!matchId || match?.status !== 'live') return;
 
-    // Poll for updates every 2 seconds when live
+    // Socket handles real-time updates — poll only as a fallback when disconnected
     const pollInterval = setInterval(async () => {
+      if (socketConnectedRef.current) return; // skip when socket is live
       try {
         const { data } = await api.get(`/scoring/${matchId}`);
         const payload = data.data || data;
@@ -2153,19 +3156,27 @@ export default function LiveScoring() {
         if (payload?.events) setEvents(payload.events);
         if (payload?.match?.commentary) setCommentary(payload.match.commentary);
       } catch (err) {
-        console.warn('Polling update failed:', err);
+        // Silently ignore — will retry on next interval
       }
-    }, 2000);
+    }, 15000); // 15s fallback interval
 
     return () => clearInterval(pollInterval);
   }, [matchId, match?.status]);
 
   useEffect(() => {
     if (!matchId) return;
-    // Initialize match socket with auth token
+    // Connect even without auth — server allows unauthenticated viewers
     const token = localStorage.getItem('accessToken');
-    if (token) connectMatchSocket(token);
+    connectMatchSocket(token || undefined);
     matchSocket.emit('join:match', matchId);
+
+    const onConnect = () => { socketConnectedRef.current = true; };
+    const onDisconnect = () => { socketConnectedRef.current = false; };
+    matchSocket.on('connect', onConnect);
+    matchSocket.on('disconnect', onDisconnect);
+    // Set initial state based on current socket status
+    socketConnectedRef.current = matchSocket.connected;
+
     const onScoreUpdate = (data) => {
       if (data.score) setScore(data.score);
       if (data.event) setEvents((prev) => [...prev, data.event]);
@@ -2187,6 +3198,8 @@ export default function LiveScoring() {
     matchSocket.on('match:status', onMatchStatus);
     return () => {
       matchSocket.emit('leave:match', matchId);
+      matchSocket.off('connect', onConnect);
+      matchSocket.off('disconnect', onDisconnect);
       matchSocket.off('score:update', onScoreUpdate);
       matchSocket.off('match:status', onMatchStatus);
     };
@@ -2222,6 +3235,7 @@ export default function LiveScoring() {
         const fresh = freshData.data || freshData;
         if (fresh.score) setScore(fresh.score);
         if (fresh.match?.commentary) setCommentary(fresh.match.commentary);
+        if (fresh.match) setMatch(prev => prev ? { ...prev, status: fresh.match.status, commentary: fresh.match.commentary } : fresh.match);
       } catch { /* use the inline response */ }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to record event');
@@ -2381,6 +3395,19 @@ export default function LiveScoring() {
     }
   };
 
+  const handleSecondInningsPlayerConfirm = async (playerData) => {
+    try {
+      await api.post(`/scoring/${matchId}/players`, playerData);
+      const { data } = await api.get(`/scoring/${matchId}`);
+      const payload = data.data || data;
+      setMatch(payload.match);
+      setScore(payload.score);
+      setMatchPhase('scoring'); // directly to scoring — live link already set up
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to set 2nd innings players');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
@@ -2409,19 +3436,21 @@ export default function LiveScoring() {
 
   const getHeaderScore = () => {
     if (!score) return null;
-    if (match.sport === 'cricket' && innings) {
-      // Build innings score for both teams
-      let homeInn = innings.battingTeam === 'home' ? innings : score.innings?.find(i => i.battingTeam === 'home');
-      let awayInn = innings.battingTeam === 'away' ? innings : score.innings?.find(i => i.battingTeam === 'away');
-      // Fallback: if battingTeam not set, show current innings score for the team that's likely batting
-      if (!homeInn && !awayInn && innings.runs !== undefined) {
-        // Show the current innings score on the away side by default (most common for 1st match)
-        awayInn = innings;
-      }
+    if (match.sport === 'cricket') {
+      const allInnings = score.innings || [];
+      const current = score.currentInningsData;
+      const homeInn = allInnings.find(i => i.battingTeam === 'home')
+        || (current?.battingTeam === 'home' ? current : null);
+      const awayInn = allInnings.find(i => i.battingTeam === 'away')
+        || (current?.battingTeam === 'away' ? current : null);
+      const fmtOv = (inn) => inn ? `${Math.floor((inn.totalBalls || 0) / 6)}.${(inn.totalBalls || 0) % 6}` : null;
+      const activeInn = current || allInnings[allInnings.length - 1];
       return {
         home: homeInn ? `${homeInn.runs}/${homeInn.wickets}` : '-',
         away: awayInn ? `${awayInn.runs}/${awayInn.wickets}` : '-',
-        overs: `${Math.floor((innings.totalBalls || 0) / 6)}.${(innings.totalBalls || 0) % 6} ov`,
+        homeOvers: fmtOv(homeInn),
+        awayOvers: fmtOv(awayInn),
+        overs: activeInn ? `${fmtOv(activeInn)} ov` : null,
       };
     }
     if (match.sport === 'football') {
@@ -2446,7 +3475,7 @@ export default function LiveScoring() {
 
   const getScorerPanel = () => {
     switch (match.sport) {
-      case 'cricket': return <CricketScorerPanel onEvent={handleEvent} match={match} score={score} undoSignal={undoSignal} />;
+      case 'cricket': return <CricketScorerPanel onEvent={handleEvent} match={match} score={score} undoSignal={undoSignal} disabled={showInningsCompleteModal || matchPhase === 'innings2_player_select'} />;
       case 'football': return <FootballScorerPanel onEvent={handleEvent} match={match} />;
       case 'basketball': return <BasketballScorerPanel onEvent={handleEvent} match={match} />;
       default: return <GenericScorerPanel onEvent={handleEvent} match={match} />;
@@ -2488,14 +3517,15 @@ export default function LiveScoring() {
           <div className="flex-1 text-center">
             <p className="text-white/60 text-xs mb-1">{teamAName}</p>
             <p className="text-3xl font-black">{headerScore?.home || '-'}</p>
+            {headerScore?.homeOvers && <p className="text-white/50 text-[11px] mt-0.5">({headerScore.homeOvers} ov)</p>}
           </div>
           <div className="px-4">
             <div className="flex justify-center"><meta.icon size={36} /></div>
-            {headerScore?.overs && <p className="text-white/50 text-xs text-center mt-1">{headerScore.overs}</p>}
           </div>
           <div className="flex-1 text-center">
             <p className="text-white/60 text-xs mb-1">{teamBName}</p>
             <p className="text-3xl font-black">{headerScore?.away || '-'}</p>
+            {headerScore?.awayOvers && <p className="text-white/50 text-[11px] mt-0.5">({headerScore.awayOvers} ov)</p>}
           </div>
         </div>
         {innings?.target && (
@@ -2524,9 +3554,50 @@ export default function LiveScoring() {
       {/* Toss (scorer only) */}
       {matchPhase === 'toss' && isScorer && <TossFlow match={match} onTossComplete={handleTossComplete} />}
 
-      {/* Player selection (scorer, cricket) */}
+      {/* Player selection (scorer, cricket) — 1st innings */}
       {matchPhase === 'player_select' && isScorer && match.sport === 'cricket' && (
         <PlayerSelection match={match} toss={match.toss || {}} onConfirm={handlePlayerConfirm} />
+      )}
+
+      {/* Innings complete modal (scorer, cricket) — shown after auto-completion of overs/wickets */}
+      <AnimatePresence>
+        {showInningsCompleteModal && isScorer && match.sport === 'cricket' && matchPhase === 'scoring' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {}} // Prevent closing by clicking outside
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="w-full max-w-md"
+            >
+              <InningsCompleteModal
+                inningsData={completedInningsData}
+                match={match}
+                submitting={submitting}
+                onStartSecondInnings={async () => {
+                  await handleEvent({ type: 'end_innings' });
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2nd innings player selection (scorer, cricket) */}
+      {matchPhase === 'innings2_player_select' && isScorer && match.sport === 'cricket' && (
+        <PlayerSelection
+          match={match}
+          toss={match.toss || {}}
+          onConfirm={handleSecondInningsPlayerConfirm}
+          secondInnings={true}
+          innings1BattingTeam={score?.innings?.[0]?.battingTeam}
+        />
       )}
 
       {/* Non-cricket: skip player selection */}
@@ -2574,8 +3645,13 @@ export default function LiveScoring() {
         </div>
       )}
 
-      {/* Tabs */}
-      {(matchPhase === 'scoring' || matchPhase === 'completed') && (
+      {/* Viewer layout — clean scorecard for audience (no login needed) */}
+      {(matchPhase === 'scoring' || matchPhase === 'completed') && !isScorer && (
+        <ViewerMatchLayout match={match} score={score} commentary={commentary} liveLink={liveLink} />
+      )}
+
+      {/* Scorer tabs — full controls for authorised scorers */}
+      {(matchPhase === 'scoring' || matchPhase === 'completed') && isScorer && (
         <>
           <div className="flex bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             {TABS.map((tab) => (

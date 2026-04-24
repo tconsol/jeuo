@@ -7,9 +7,18 @@ export const checkAuth = createAsyncThunk('auth/check', async (_, { rejectWithVa
   try {
     const { data } = await api.get('/auth/me');
     return data.data.user;
-  } catch {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+  } catch (err) {
+    // Don't treat rate limiting (429) or server errors (5xx) as auth failures
+    const status = err.response?.status;
+    if (status === 429 || (status >= 500 && status < 600)) {
+      // Silently reject without clearing tokens - will retry on next app load
+      return rejectWithValue('Rate limited or server error - will retry');
+    }
+    // Only clear tokens on actual auth failures (401, 403)
+    if (status === 401 || status === 403) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    }
     return rejectWithValue('Invalid token');
   }
 });

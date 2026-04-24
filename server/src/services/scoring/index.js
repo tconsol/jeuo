@@ -295,15 +295,40 @@ class ScoringService {
       .populate('teams.home.players', 'name avatar')
       .populate('teams.away.players', 'name avatar')
       .populate('scorers', 'name')
+      .populate('result.playerOfMatch', 'name avatar')
       .populate('venue', 'name location images isIndoor surfaceType')
       .lean();
     if (!match) throw new Error('Match not found');
     const events = await Event.find({ match: matchId, isUndone: false })
       .sort({ sequence: 1 })
       .lean();
+
+    // Recompute full score from events to get batting/bowling cards, overHistory, fow, etc.
+    let score = match.scoreSnapshot || null;
+    if (events.length > 0) {
+      try {
+        const engine = this.getEngine(match.sport);
+        const mappedEvents = events.map(e => ({
+          type: e.type,
+          team: e.team,
+          player: e.player?.toString(),
+          payload: e.payload,
+          isUndone: e.isUndone || false,
+        }));
+        if (typeof engine.deriveScoreFromEvents === 'function') {
+          score = engine.deriveScoreFromEvents(mappedEvents, match.format || {});
+        } else if (typeof engine.computeScore === 'function') {
+          score = engine.computeScore(mappedEvents, match.format || {});
+        }
+      } catch (err) {
+        logger.warn('Failed to recompute score from events, using snapshot:', err.message);
+        score = match.scoreSnapshot || null;
+      }
+    }
+
     return {
       match,
-      score: match.scoreSnapshot || null,
+      score,
       events,
     };
   }

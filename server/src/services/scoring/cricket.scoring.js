@@ -25,7 +25,7 @@ class CricketScoring {
     return {
       innings: [],
       currentInnings: 0,
-      totalInnings: format.innings || 2,
+      totalInnings: format.innings || 1,  // 1 innings per team (T10/T20/ODI default)
       oversPerInnings: format.overs || null, // null = unlimited (Test)
       currentInningsData: this._createInningsData(),
     };
@@ -64,9 +64,14 @@ class CricketScoring {
     const innings = state.currentInningsData;
     const payload = event.payload;
 
-    // players_set is allowed even after innings complete (e.g. 2nd innings setup)
-    if (innings.isComplete && event.type !== 'players_set') {
-      throw new Error('Innings is already complete');
+    if (innings.isComplete) {
+      // players_set and end_innings are allowed after innings complete (2nd innings setup / archiving)
+      if (event.type === 'players_set') return this._processPlayersSet(state, event);
+      if (event.type === 'end_innings') return this._processEndInnings(state, event);
+      // end_over after auto-complete is a no-op (innings already archived its over)
+      if (event.type === 'end_over') return state;
+      // Any other event (delivery, wicket) on a complete innings is ignored
+      return state;
     }
 
     switch (event.type) {
@@ -104,6 +109,12 @@ class CricketScoring {
       innings.bowlingCard[k] = { ...v };
     }
 
+    // Auto-set batting/bowling team from event.team if not yet assigned (seed events)
+    if (!innings.battingTeam && event.team) {
+      innings.battingTeam = event.team;
+      innings.bowlingTeam = event.team === 'home' ? 'away' : 'home';
+    }
+
     const p = event.payload;
     const isExtra = p.isExtra || false;
     const extraType = p.extraType;
@@ -113,9 +124,16 @@ class CricketScoring {
     let totalRuns = 0;
     let isLegalDelivery = true;
 
-    // Initialize batting card for striker
-    // Use event.player as fallback for seed data / legacy events without players_set
-    const strikerId = innings.batsmen.striker || (event.player ? event.player.toString() : null);
+    // Determine striker: if event.player is set and differs from current striker
+    // (e.g. new batsman after wicket, or seed data without explicit players_set),
+    // update the striker accordingly.
+    if (event.player) {
+      const evPlayer = event.player.toString();
+      if (!innings.batsmen.striker || innings.batsmen.striker !== evPlayer) {
+        innings.batsmen.striker = evPlayer;
+      }
+    }
+    const strikerId = innings.batsmen.striker;
     if (strikerId && !innings.battingCard[strikerId]) {
       innings.battingCard[strikerId] = { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
     }
@@ -254,6 +272,12 @@ class CricketScoring {
       innings.bowlingCard[k] = { ...v };
     }
 
+    // Auto-set batting/bowling team from event.team if not yet assigned (seed events)
+    if (!innings.battingTeam && event.team) {
+      innings.battingTeam = event.team;
+      innings.bowlingTeam = event.team === 'home' ? 'away' : 'home';
+    }
+
     const p = event.payload;
 
     // A wicket is essentially a delivery that also dismisses a batter
@@ -277,7 +301,8 @@ class CricketScoring {
       innings.totalBalls += 1;
     }
 
-    const strikerId = innings.batsmen.striker || (event.player ? event.player.toString() : null);
+    // Determine who got out: use event.player, falling back to current striker
+    const strikerId = (event.player ? event.player.toString() : null) || innings.batsmen.striker;
     if (strikerId) {
       if (!innings.battingCard[strikerId]) {
         innings.battingCard[strikerId] = { runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
@@ -303,6 +328,15 @@ class CricketScoring {
     }
 
     innings.wickets += 1;
+
+    // Vacate the striker position — next delivery will set the new batsman
+    // via event.player (fallback in _processDelivery)
+    if (!p.isExtra || p.extraType !== 'no_ball') {
+      // On a no-ball wicket (run-out only), non-striker doesn't change automatically
+      innings.batsmen.striker = null;
+    } else {
+      innings.batsmen.striker = null;
+    }
 
     // Fall of wicket record
     const oversStr = `${Math.floor(innings.totalBalls / 6)}.${innings.totalBalls % 6}`;
@@ -348,7 +382,13 @@ class CricketScoring {
     for (const [k, v] of Object.entries(state.currentInningsData.bowlingCard || {})) {
       innings.bowlingCard[k] = { ...v };
     }
-    this._completeOver(innings);
+    // Only call _completeOver if the over wasn't already auto-completed inside
+    // _processDelivery (which happens when the 6th legal ball is bowled and
+    // resets innings.balls to 0 / innings.currentOver to []).
+    // If currentOver still has balls, the over wasn't auto-completed yet.
+    if (innings.currentOver.length > 0) {
+      this._completeOver(innings);
+    }
     return { ...state, currentInningsData: innings };
   }
 
