@@ -233,18 +233,43 @@ export default function MatchDetail() {
         </div>
 
         {/* Teams & Score */}
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 text-center">
-              <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-xl font-black text-white">{(homeTeam?.name || 'H')[0]}</span>
+        <div className="px-4 sm:px-6 py-5">
+          {homeScore !== null || awayScore !== null ? (
+            <>
+              {/* ── Mobile: vertical stacked team rows ── */}
+              <div className="flex sm:hidden flex-col gap-2.5">
+                {[
+                  { team: homeTeam, s: homeScore, w: homeWickets, label: 'Home' },
+                  { team: awayTeam, s: awayScore, w: awayWickets, label: 'Away' },
+                ].map(({ team, s, w, label }) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-black text-white">{(team?.name || label)[0]}</span>
+                      </div>
+                      <p className="text-white font-bold text-sm truncate">{team?.name || `${label} Team`}</p>
+                    </div>
+                    <span className="text-2xl font-black text-white tabular-nums flex-shrink-0">
+                      {s ?? '—'}{w !== null && s !== null ? `/${w}` : ''}
+                    </span>
+                  </div>
+                ))}
+                {match.status === 'live' && score?.currentInningsData && (
+                  <p className="text-white/55 text-xs text-center pt-1">
+                    {score.currentInningsData.overs ?? 0}.{score.currentInningsData.balls ?? 0} overs
+                  </p>
+                )}
               </div>
-              <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{homeTeam?.name || 'Home Team'}</p>
-            </div>
 
-            <div className="text-center min-w-[100px]">
-              {homeScore !== null || awayScore !== null ? (
-                <div>
+              {/* ── Desktop: side-by-side ── */}
+              <div className="hidden sm:flex items-center justify-between gap-4">
+                <div className="flex-1 text-center">
+                  <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                    <span className="text-xl font-black text-white">{(homeTeam?.name || 'H')[0]}</span>
+                  </div>
+                  <p className="text-white font-bold text-sm truncate max-w-[120px] mx-auto">{homeTeam?.name || 'Home'}</p>
+                </div>
+                <div className="text-center min-w-[140px]">
                   <div className="flex items-center justify-center gap-3">
                     <span className="text-4xl font-black text-white tabular-nums">
                       {homeScore ?? '-'}{homeWickets !== null ? `/${homeWickets}` : ''}
@@ -260,29 +285,43 @@ export default function MatchDetail() {
                     </p>
                   )}
                 </div>
-              ) : (
-                <div>
-                  <p className="text-5xl font-black text-white/30">VS</p>
-                  {match.scheduledAt && (
-                    <p className="text-white/60 text-xs mt-1">
-                      {new Date(match.scheduledAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  )}
+                <div className="flex-1 text-center">
+                  <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                    <span className="text-xl font-black text-white">{(awayTeam?.name || 'A')[0]}</span>
+                  </div>
+                  <p className="text-white font-bold text-sm truncate max-w-[120px] mx-auto">{awayTeam?.name || 'Away'}</p>
                 </div>
-              )}
-            </div>
-
-            <div className="flex-1 text-center">
-              <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-xl font-black text-white">{(awayTeam?.name || 'A')[0]}</span>
               </div>
-              <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{awayTeam?.name || 'Away Team'}</p>
+            </>
+          ) : (
+            /* No score yet — VS layout */
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/15 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2">
+                  <span className="text-base sm:text-xl font-black text-white">{(homeTeam?.name || 'H')[0]}</span>
+                </div>
+                <p className="text-white font-bold text-xs sm:text-sm truncate max-w-[90px] mx-auto">{homeTeam?.name || 'Home'}</p>
+              </div>
+              <div className="text-center flex-shrink-0">
+                <p className="text-3xl sm:text-5xl font-black text-white/30">VS</p>
+                {match.scheduledAt && (
+                  <p className="text-white/60 text-xs mt-1">
+                    {new Date(match.scheduledAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
+              </div>
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/15 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2">
+                  <span className="text-base sm:text-xl font-black text-white">{(awayTeam?.name || 'A')[0]}</span>
+                </div>
+                <p className="text-white font-bold text-xs sm:text-sm truncate max-w-[90px] mx-auto">{awayTeam?.name || 'Away'}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Result */}
           {match.status === 'completed' && match.result && (
-            <div className="mt-4 bg-white/10 rounded-2xl px-4 py-2.5 text-center">
+            <div className="mt-3 bg-white/10 rounded-2xl px-4 py-2.5 text-center">
               <p className="text-white font-bold text-sm">
                 {match.result.summary
                   ? match.result.summary

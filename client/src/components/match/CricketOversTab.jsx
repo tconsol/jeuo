@@ -46,60 +46,63 @@ function InningsOvers({ innings, playerNames, label }) {
     <div>
       <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3 px-1">{label}</p>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[40px_1fr_48px_48px_80px] px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider gap-2">
-          <span>Ov</span>
-          <span>Bowler</span>
-          <span className="text-center">Runs</span>
-          <span className="text-center">Wkts</span>
-          <span className="text-right">Score</span>
-        </div>
+        {/* Scrollable table wrapper for small screens */}
+        <div className="overflow-x-auto">
+          {/* Header */}
+          <div className="grid grid-cols-[36px_1fr_44px_44px_72px] min-w-[280px] px-3 sm:px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider gap-1.5">
+            <span>Ov</span>
+            <span>Bowler</span>
+            <span className="text-center">Runs</span>
+            <span className="text-center">Wkt</span>
+            <span className="text-right">Score</span>
+          </div>
 
-        {/* Over rows */}
-        <div className="divide-y divide-gray-50">
-          {rows.map((row) => (
-            <div key={row.over} className={`${row.maiden ? 'bg-emerald-50/40' : ''}`}>
-              <div className="grid grid-cols-[40px_1fr_48px_48px_80px] px-4 py-2.5 items-center gap-2">
-                <span className="text-xs font-black text-gray-500 tabular-nums">{row.over}</span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-800 truncate">{getName(row.bowler)}</p>
-                  {row.maiden && (
-                    <span className="text-[10px] text-emerald-600 font-bold">Maiden</span>
-                  )}
+          {/* Over rows */}
+          <div className="divide-y divide-gray-50">
+            {rows.map((row) => (
+              <div key={row.over} className={`${row.maiden ? 'bg-emerald-50/40' : ''} min-w-[280px]`}>
+                <div className="grid grid-cols-[36px_1fr_44px_44px_72px] px-3 sm:px-4 py-2.5 items-center gap-1.5">
+                  <span className="text-xs font-black text-gray-500 tabular-nums">{row.over}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 truncate">{getName(row.bowler)}</p>
+                    {row.maiden && (
+                      <span className="text-[10px] text-emerald-600 font-bold">Maiden</span>
+                    )}
+                  </div>
+                  <span className={`text-sm font-black tabular-nums text-center ${row.wickets > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {row.runs}
+                  </span>
+                  <span className="text-sm font-bold tabular-nums text-center text-gray-500">
+                    {row.wickets > 0 ? <span className="text-red-600">{row.wickets}</span> : '—'}
+                  </span>
+                  <span className="text-xs font-bold tabular-nums text-right text-gray-700">
+                    {row.cumRuns}/{row.cumWickets}
+                  </span>
                 </div>
-                <span className={`text-sm font-black tabular-nums text-center ${row.wickets > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                  {row.runs}
-                </span>
-                <span className="text-sm font-bold tabular-nums text-center text-gray-500">
-                  {row.wickets > 0 ? <span className="text-red-600">{row.wickets}</span> : '—'}
-                </span>
-                <span className="text-xs font-bold tabular-nums text-right text-gray-700">
-                  {row.cumRuns}/{row.cumWickets}
-                </span>
+
+                {/* Ball-by-ball detail */}
+                {row.detail.length > 0 && (
+                  <div className="px-3 sm:px-4 pb-2.5 flex flex-wrap gap-1">
+                    {row.detail.map((ball, bi) => {
+                      const { label, cls } = getBallLabel(ball);
+                      return (
+                        <span
+                          key={bi}
+                          className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-[11px] font-bold flex items-center justify-center ${cls}`}
+                        >
+                          {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-
-              {/* Ball-by-ball detail */}
-              {row.detail.length > 0 && (
-                <div className="px-4 pb-2.5 flex flex-wrap gap-1">
-                  {row.detail.map((ball, bi) => {
-                    const { label, cls } = getBallLabel(ball);
-                    return (
-                      <span
-                        key={bi}
-                        className={`w-7 h-7 rounded-full text-[11px] font-bold flex items-center justify-center ${cls}`}
-                      >
-                        {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Summary row */}
-        <div className="px-4 py-3 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
+        <div className="px-3 sm:px-4 py-3 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
           <span className="text-xs font-bold text-gray-500">{history.length} overs</span>
           <span className="text-sm font-black text-gray-800 tabular-nums">
             {innings?.runs ?? 0}/{innings?.wickets ?? 0}

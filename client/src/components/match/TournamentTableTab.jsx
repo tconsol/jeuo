@@ -46,42 +46,45 @@ export default function TournamentTableTab({ tournament }) {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_32px_32px_32px_32px_48px] px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider gap-2">
-          <span>Team</span>
-          <span className="text-center">P</span>
-          <span className="text-center">W</span>
-          <span className="text-center">L</span>
-          <span className="text-center">D</span>
-          <span className="text-right">Pts</span>
-        </div>
+        {/* Scrollable on very small screens */}
+        <div className="overflow-x-auto">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_28px_28px_28px_28px_44px] min-w-[260px] px-3 sm:px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider gap-1.5">
+            <span>Team</span>
+            <span className="text-center">P</span>
+            <span className="text-center">W</span>
+            <span className="text-center">L</span>
+            <span className="text-center">D</span>
+            <span className="text-right">Pts</span>
+          </div>
 
-        <div className="divide-y divide-gray-50">
-          {data.map((row, i) => (
-            <div
-              key={row.name || i}
-              className={`grid grid-cols-[1fr_32px_32px_32px_32px_48px] px-4 py-3 items-center gap-2 ${
-                i === 0 ? 'bg-indigo-50/30' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${
-                  i === 0 ? 'bg-amber-100 text-amber-700'
-                  : i === 1 ? 'bg-gray-200 text-gray-600'
-                  : i === 2 ? 'bg-orange-100 text-orange-700'
-                  : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {i + 1}
+          <div className="divide-y divide-gray-50">
+            {data.map((row, i) => (
+              <div
+                key={row.name || i}
+                className={`grid grid-cols-[1fr_28px_28px_28px_28px_44px] min-w-[260px] px-3 sm:px-4 py-2.5 items-center gap-1.5 ${
+                  i === 0 ? 'bg-indigo-50/30' : ''
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-black flex-shrink-0 ${
+                    i === 0 ? 'bg-amber-100 text-amber-700'
+                    : i === 1 ? 'bg-gray-200 text-gray-600'
+                    : i === 2 ? 'bg-orange-100 text-orange-700'
+                    : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 truncate">{row.name || '—'}</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-900 truncate">{row.name || '—'}</span>
+                <span className="text-xs sm:text-sm tabular-nums text-gray-500 text-center">{row.played ?? 0}</span>
+                <span className="text-xs sm:text-sm tabular-nums text-emerald-600 font-semibold text-center">{row.won ?? 0}</span>
+                <span className="text-xs sm:text-sm tabular-nums text-red-500 font-semibold text-center">{row.lost ?? 0}</span>
+                <span className="text-xs sm:text-sm tabular-nums text-gray-400 text-center">{row.drawn ?? 0}</span>
+                <span className="text-xs sm:text-sm tabular-nums font-black text-indigo-700 text-right">{row.points ?? 0}</span>
               </div>
-              <span className="text-sm tabular-nums text-gray-500 text-center">{row.played ?? 0}</span>
-              <span className="text-sm tabular-nums text-emerald-600 font-semibold text-center">{row.won ?? 0}</span>
-              <span className="text-sm tabular-nums text-red-500 font-semibold text-center">{row.lost ?? 0}</span>
-              <span className="text-sm tabular-nums text-gray-400 text-center">{row.drawn ?? 0}</span>
-              <span className="text-sm tabular-nums font-black text-indigo-700 text-right">{row.points ?? 0}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

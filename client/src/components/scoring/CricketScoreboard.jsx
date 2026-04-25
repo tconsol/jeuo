@@ -50,34 +50,34 @@ function InningsCard({ innings, playerNames, isCurrent }) {
       {/* Batting */}
       {battingEntries.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-4 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
               <GiCricketBat size={16} className="inline mr-1" /> Batting
             </span>
-            <span className="text-xs text-gray-400">R (B) 4s 6s SR</span>
+            <span className="text-[10px] text-gray-400">R &nbsp;B &nbsp;4s &nbsp;6s &nbsp;<span className="hidden xs:inline">SR</span></span>
           </div>
           <div className="divide-y divide-gray-50">
             {battingEntries.map(([id, s]) => {
               const isStriker = isCurrent && innings.batsmen?.striker === id;
               return (
-                <div key={id} className={`flex items-center px-5 py-3 gap-3 ${s.out ? 'opacity-55' : ''}`}>
+                <div key={id} className={`flex items-center px-3 sm:px-5 py-2.5 gap-2 ${s.out ? 'opacity-55' : ''}`}>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <span className="font-semibold text-gray-900 text-sm truncate">{getName(id)}</span>
                       {isStriker && !s.out && (
                         <span className="text-indigo-500 font-black text-xs">*</span>
                       )}
                       {s.out && (
-                        <span className="text-[10px] text-gray-400 capitalize">{s.outDesc || 'out'}</span>
+                        <span className="text-[10px] text-gray-400 capitalize hidden sm:inline">{s.outDesc || 'out'}</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-right shrink-0">
-                    <span className="font-bold text-gray-900 tabular-nums w-6 text-right">{s.runs ?? 0}</span>
-                    <span className="text-gray-400 tabular-nums">({s.balls ?? 0})</span>
-                    <span className="text-blue-500 tabular-nums text-xs w-4 text-center">{s.fours ?? 0}</span>
-                    <span className="text-purple-500 tabular-nums text-xs w-4 text-center">{s.sixes ?? 0}</span>
-                    <span className="text-gray-400 text-xs tabular-nums w-10 text-right">
+                  <div className="flex items-center gap-2 text-sm text-right shrink-0 tabular-nums">
+                    <span className="font-bold text-gray-900 w-6 text-right">{s.runs ?? 0}</span>
+                    <span className="text-gray-400 text-xs w-7 text-center">{s.balls ?? 0}</span>
+                    <span className="text-blue-500 text-xs w-5 text-center">{s.fours ?? 0}</span>
+                    <span className="text-purple-500 text-xs w-5 text-center">{s.sixes ?? 0}</span>
+                    <span className="text-gray-400 text-xs w-9 text-right hidden sm:block">
                       {(s.balls ?? 0) > 0 ? (((s.runs ?? 0) / s.balls) * 100).toFixed(1) : '0.0'}
                     </span>
                   </div>
@@ -86,20 +86,20 @@ function InningsCard({ innings, playerNames, isCurrent }) {
             })}
 
             {/* Extras row */}
-            <div className="flex items-center px-5 py-2 bg-gray-50/40 text-xs">
-              <div className="flex-1 text-gray-500">
-                Extras
+            <div className="flex items-center px-3 sm:px-5 py-2 bg-gray-50/40 text-xs gap-2">
+              <div className="flex-1 text-gray-500 min-w-0">
+                <span className="font-semibold">Extras</span>
                 {typeof extras === 'object' && extrasTotal > 0 && (
-                  <span className="ml-2 text-gray-400">
+                  <span className="ml-1.5 text-gray-400 hidden sm:inline">
                     (W {extras.wides || 0}, NB {extras.noBalls || 0}, B {extras.byes || 0}, LB {extras.legByes || 0}{extras.penalties ? `, P ${extras.penalties}` : ''})
                   </span>
                 )}
               </div>
-              <span className="font-semibold text-gray-700">{extrasTotal}</span>
+              <span className="font-semibold text-gray-700 flex-shrink-0">{extrasTotal}</span>
             </div>
 
             {/* Total row */}
-            <div className="flex items-center px-5 py-2.5 bg-gray-50">
+            <div className="flex items-center px-3 sm:px-5 py-2.5 bg-gray-50">
               <div className="flex-1 text-sm font-bold text-gray-700">Total</div>
               <span className="font-black text-gray-900 text-sm tabular-nums">
                 {innings.runs ?? 0}/{innings.wickets ?? 0} ({innings.overs ?? 0}.{innings.balls ?? 0} ov)
@@ -112,27 +112,25 @@ function InningsCard({ innings, playerNames, isCurrent }) {
       {/* Bowling */}
       {bowlingEntries.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-              Bowling
-            </span>
-            <span className="text-xs text-gray-400">O M R W ER</span>
+          <div className="px-4 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Bowling</span>
+            <span className="text-[10px] text-gray-400">O &nbsp;M &nbsp;R &nbsp;W <span className="hidden sm:inline">&nbsp;ER</span></span>
           </div>
           <div className="divide-y divide-gray-50">
             {bowlingEntries.map(([id, s]) => {
               const isBowling = isCurrent && !innings.isComplete && innings.currentBowler === id;
               return (
-                <div key={id} className="flex items-center justify-between px-5 py-3">
+                <div key={id} className="flex items-center justify-between px-3 sm:px-5 py-2.5">
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     <span className="font-semibold text-gray-900 text-sm truncate">{getName(id)}</span>
                     {isBowling && <span className="text-indigo-500 font-black text-xs flex-shrink-0">*</span>}
                   </div>
-                  <div className="flex items-center gap-2 text-sm tabular-nums shrink-0">
-                    <span className="font-mono text-gray-900 w-6 text-center">{s.overs ?? 0}</span>
-                    <span className="font-mono text-gray-900 w-6 text-center">{s.maidens ?? 0}</span>
-                    <span className="font-mono text-gray-900 w-6 text-center">{s.runs ?? 0}</span>
-                    <span className="font-mono text-gray-900 w-6 text-center">{s.wickets ?? 0}</span>
-                    <span className="text-gray-600 text-xs w-12 text-right">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-sm tabular-nums shrink-0">
+                    <span className="font-mono text-gray-900 w-5 text-center text-xs sm:text-sm">{s.overs ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-5 text-center text-xs sm:text-sm">{s.maidens ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-6 text-center text-xs sm:text-sm">{s.runs ?? 0}</span>
+                    <span className="font-mono text-gray-900 w-5 text-center text-xs sm:text-sm">{s.wickets ?? 0}</span>
+                    <span className="text-gray-600 text-xs w-9 sm:w-12 text-right hidden sm:block">
                       {(s.overs ?? 0) > 0 ? ((s.runs ?? 0) / s.overs).toFixed(2) : '—'}
                     </span>
                   </div>
@@ -149,7 +147,7 @@ function InningsCard({ innings, playerNames, isCurrent }) {
           <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Fall of Wickets</span>
           </div>
-          <div className="px-5 py-3 flex flex-wrap gap-x-4 gap-y-1.5">
+          <div className="px-3 sm:px-5 py-3 flex flex-wrap gap-x-3 gap-y-1.5">
             {fow.map((f, i) => (
               <span key={i} className="text-xs text-gray-600">
                 <span className="font-bold text-gray-900">{f.runs}/{f.wicket}</span>
@@ -259,7 +257,7 @@ export default function CricketScoreboard({ score, match }) {
                 return (
                   <span
                     key={i}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${cls}`}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm ${cls}`}
                   >
                     {label}
                   </span>

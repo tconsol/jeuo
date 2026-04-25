@@ -53,13 +53,13 @@ function InningsStats({ innings, playerNames, label }) {
           </div>
           <div className="divide-y divide-gray-50">
             {fow.map((f, i) => (
-              <div key={i} className="flex items-center px-5 py-2.5 gap-3">
+              <div key={i} className="flex items-center px-3 sm:px-5 py-2.5 gap-2.5">
                 <span className="w-6 h-6 rounded-lg bg-red-100 text-red-700 text-xs font-black flex items-center justify-center flex-shrink-0">
                   {f.wicket}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{getName(f.batter)}</p>
-                  <p className="text-xs text-gray-400 capitalize">{f.howOut?.replace(/_/g, ' ') || 'out'}{f.bowler ? ` b. ${getName(f.bowler)}` : ''}</p>
+                  <p className="text-xs text-gray-400 capitalize truncate">{f.howOut?.replace(/_/g, ' ') || 'out'}{f.bowler ? ` b. ${getName(f.bowler)}` : ''}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-black text-gray-900 tabular-nums">{f.runs}/{f.wicket}</p>
@@ -77,7 +77,7 @@ function InningsStats({ innings, playerNames, label }) {
           <div className="px-5 py-3 bg-gray-50/70 border-b border-gray-100">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Extras</span>
           </div>
-          <div className="px-5 py-3 grid grid-cols-3 gap-3">
+          <div className="px-3 sm:px-5 py-3 grid grid-cols-3 gap-2">
             {[
               { label: 'Wides',    value: wides },
               { label: 'No Balls', value: noBalls },
@@ -86,8 +86,8 @@ function InningsStats({ innings, playerNames, label }) {
               { label: 'Penalties',value: penalties },
               { label: 'Total',    value: extrasTotal, highlight: true },
             ].map(({ label: l, value, highlight }) => (
-              <div key={l} className={`text-center p-2.5 rounded-xl ${highlight ? 'bg-indigo-50' : 'bg-gray-50'}`}>
-                <p className={`text-lg font-black tabular-nums ${highlight ? 'text-indigo-700' : 'text-gray-800'}`}>{value}</p>
+              <div key={l} className={`text-center p-2 sm:p-2.5 rounded-xl ${highlight ? 'bg-indigo-50' : 'bg-gray-50'}`}>
+                <p className={`text-base sm:text-lg font-black tabular-nums ${highlight ? 'text-indigo-700' : 'text-gray-800'}`}>{value}</p>
                 <p className={`text-[10px] font-semibold mt-0.5 ${highlight ? 'text-indigo-400' : 'text-gray-400'}`}>{l}</p>
               </div>
             ))}
@@ -101,12 +101,13 @@ function InningsStats({ innings, playerNames, label }) {
           <div className="px-5 py-3 bg-gray-50/70 border-b border-gray-100">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Scoring Breakdown</span>
           </div>
-          <div className="px-5 py-3 grid grid-cols-4 gap-2">
+          <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { label: 'Fours',    value: fours,    sub: `${fours * 4} runs`, bg: 'bg-blue-50', text: 'text-blue-700' },
-              { label: 'Sixes',    value: sixes,    sub: `${sixes * 6} runs`, bg: 'bg-purple-50', text: 'text-purple-700' },
-              { label: 'Dots',     value: dotBalls, sub: 'balls',             bg: 'bg-gray-50',   text: 'text-gray-700' },
-              { label: 'Boundary%',value: totalRuns > 0 ? `${Math.round((boundaryRuns / totalRuns) * 100)}%` : '0%', sub: `${boundaryRuns}/${totalRuns}`, bg: 'bg-amber-50', text: 'text-amber-700' },
+              { label: 'Fours',     value: fours,    sub: `${fours * 4} runs`,             bg: 'bg-blue-50',   text: 'text-blue-700'   },
+              { label: 'Sixes',     value: sixes,    sub: `${sixes * 6} runs`,             bg: 'bg-purple-50', text: 'text-purple-700' },
+              { label: 'Dot Balls', value: dotBalls, sub: 'deliveries',                    bg: 'bg-gray-50',   text: 'text-gray-700'   },
+              { label: 'Boundary%', value: totalRuns > 0 ? `${Math.round((boundaryRuns / totalRuns) * 100)}%` : '0%',
+                sub: `${boundaryRuns} of ${totalRuns} runs`,                               bg: 'bg-amber-50',  text: 'text-amber-700'  },
             ].map(({ label: l, value, sub, bg, text }) => (
               <div key={l} className={`${bg} rounded-xl p-3 text-center`}>
                 <p className={`text-xl font-black tabular-nums ${text}`}>{value}</p>

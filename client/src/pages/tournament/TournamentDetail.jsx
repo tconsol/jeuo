@@ -162,7 +162,7 @@ export default function TournamentDetail() {
           </div>
 
           {/* Quick stats */}
-          <div className="flex justify-center gap-8 mt-6">
+          <div className="flex flex-wrap justify-center gap-5 sm:gap-8 mt-6">
             {fmt(tournament.startDate) && (
               <div className="text-center">
                 <p className="text-white/50 text-[11px] uppercase tracking-wider">Start</p>
@@ -197,7 +197,7 @@ export default function TournamentDetail() {
         {canJoin && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h3 className="font-bold text-gray-900">Join this Tournament</h3>
                 <p className="text-sm text-gray-500 mt-0.5">
@@ -207,9 +207,9 @@ export default function TournamentDetail() {
               </div>
               <button
                 onClick={() => navigate(`/tournaments/${id}/join`)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition active:scale-95"
+                className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition active:scale-95"
               >
-                <FiUserPlus size={15} /> Join
+                <FiUserPlus size={15} /> Join Tournament
               </button>
             </div>
           </motion.div>
