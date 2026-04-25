@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import {
   FiCalendar, FiUsers, FiAward, FiClock,
-  FiMapPin, FiChevronRight, FiPlus, FiSearch, FiFilter,
+  FiMapPin, FiChevronRight, FiPlus, FiSearch, FiFilter, FiBookmark,
 } from 'react-icons/fi';
 import api from '../lib/api';
 
@@ -97,13 +97,22 @@ export default function Tournaments() {
               )}
             </div>
             {isAuthenticated && (
-              <button
-                onClick={() => navigate('/tournaments/create')}
-                className="flex items-center gap-2 bg-white text-indigo-700 font-bold px-6 py-3 rounded-2xl hover:bg-indigo-50 transition-all active:scale-95 shadow-lg self-start sm:self-auto flex-shrink-0"
-              >
-                <FiPlus size={18} />
-                Create Tournament
-              </button>
+              <div className="flex gap-2 self-start sm:self-auto flex-shrink-0">
+                <button
+                  onClick={() => navigate('/tournaments/my')}
+                  className="flex items-center gap-2 bg-white/20 text-white font-bold px-4 py-3 rounded-2xl hover:bg-white/30 transition-all active:scale-95"
+                >
+                  <FiBookmark size={16} />
+                  My Tournaments
+                </button>
+                <button
+                  onClick={() => navigate('/tournaments/create')}
+                  className="flex items-center gap-2 bg-white text-indigo-700 font-bold px-6 py-3 rounded-2xl hover:bg-indigo-50 transition-all active:scale-95 shadow-lg"
+                >
+                  <FiPlus size={18} />
+                  Create
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -1,20 +1,29 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { SportIcon } from '../utils/sportIcons';
-import { FiMapPin, FiClock, FiTarget, FiBarChart2, FiUsers, FiInfo, FiArrowLeft, FiWifi } from 'react-icons/fi';
+import {
+  FiMapPin, FiClock, FiBarChart2, FiUsers, FiInfo, FiArrowLeft, FiWifi,
+  FiMessageCircle, FiActivity, FiLayers, FiAward,
+} from 'react-icons/fi';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import { connectMatchSocket, disconnectMatchSocket } from '../lib/socket';
 import { setLiveScore, addEvent, setConnected, resetMatch } from '../store/slices/matchSlice';
 
-import CricketScoreboard from '../components/scoring/CricketScoreboard';
-import FootballScoreboard from '../components/scoring/FootballScoreboard';
+import CricketScoreboard    from '../components/scoring/CricketScoreboard';
+import FootballScoreboard   from '../components/scoring/FootballScoreboard';
 import BasketballScoreboard from '../components/scoring/BasketballScoreboard';
-import TennisScoreboard from '../components/scoring/TennisScoreboard';
-import RacketScoreboard from '../components/scoring/RacketScoreboard';
+import TennisScoreboard     from '../components/scoring/TennisScoreboard';
+import RacketScoreboard     from '../components/scoring/RacketScoreboard';
 import VolleyballScoreboard from '../components/scoring/VolleyballScoreboard';
+
+import MatchSummaryTab     from '../components/match/MatchSummaryTab';
+import CommentaryTab       from '../components/match/CommentaryTab';
+import CricketStatsTab     from '../components/match/CricketStatsTab';
+import CricketOversTab     from '../components/match/CricketOversTab';
+import TournamentTableTab  from '../components/match/TournamentTableTab';
 
 const SCOREBOARD_MAP = {
   cricket:      CricketScoreboard,
@@ -36,33 +45,58 @@ const SPORT_GRADIENT = {
   table_tennis: 'from-red-500 via-red-600 to-rose-700',
 };
 
-const TABS = [
-  { key: 'scorecard', label: 'Scorecard', icon: FiBarChart2 },
-  { key: 'teams',     label: 'Teams',     icon: FiUsers },
-  { key: 'info',      label: 'Info',      icon: FiInfo },
-];
+function buildTabs(match) {
+  const isCricket = match?.sport === 'cricket';
+  const tabs = [
+    { key: 'summary',   label: 'Summary',     icon: FiInfo },
+    { key: 'scorecard', label: 'Scorecard',   icon: FiBarChart2 },
+  ];
+  if (isCricket) {
+    tabs.push({ key: 'commentary', label: 'Commentary', icon: FiMessageCircle });
+    tabs.push({ key: 'stats',      label: 'Stats',      icon: FiActivity });
+    tabs.push({ key: 'overs',      label: 'Overs',      icon: FiLayers });
+  }
+  if (match?.tournament) {
+    tabs.push({ key: 'table', label: 'Table', icon: FiAward });
+  }
+  tabs.push({ key: 'teams', label: 'Teams', icon: FiUsers });
+  return tabs;
+}
 
 export default function MatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { liveScore, isConnected } = useSelector((s) => s.match);
-  const [activeTab, setActiveTab] = useState('scorecard');
+  const [activeTab, setActiveTab] = useState('summary');
+  const [commentary, setCommentary] = useState([]);
 
-  // Query match metadata from /matches/:id
+  // Match metadata
   const { data: match, isLoading, isError } = useQuery({
     queryKey: ['match', id],
     queryFn: () => api.get(`/matches/${id}`).then((r) => r.data.data.match),
     retry: 1,
   });
 
-  // Query score data separately (only after match loads)
+  // Score data
   const { data: scoreData } = useQuery({
     queryKey: ['match-score', id],
-    queryFn: () => api.get(`/scoring/${id}`).then((r) => r.data.data?.score || r.data.data),
+    queryFn: () =>
+      api.get(`/scoring/${id}`).then((r) => {
+        const d = r.data.data;
+        if (d?.score !== undefined) return d.score;
+        return d || {};
+      }),
     enabled: !!match,
     retry: false,
   });
+
+  // Seed commentary from match doc (auto-generated, last 200)
+  useEffect(() => {
+    if (match?.commentary?.length) {
+      setCommentary(match.commentary);
+    }
+  }, [match]);
 
   useEffect(() => {
     if (scoreData) {
@@ -70,7 +104,7 @@ export default function MatchDetail() {
     }
   }, [scoreData, match, dispatch]);
 
-  // Socket — only for live matches
+  // Socket — live matches only
   useEffect(() => {
     if (!id || match?.status !== 'live') return;
 
@@ -85,6 +119,7 @@ export default function MatchDetail() {
     socket.on('score:update', (data) => {
       dispatch(setLiveScore({ score: data.score, scoreVersion: data.scoreVersion }));
       if (data.event) dispatch(addEvent(data.event));
+      if (data.commentary) setCommentary(data.commentary);
     });
     socket.on('match:status', (data) => {
       if (data.status === 'completed') window.location.reload();
@@ -96,6 +131,15 @@ export default function MatchDetail() {
       dispatch(resetMatch());
     };
   }, [id, match?.status, dispatch]);
+
+  const TABS = useMemo(() => buildTabs(match), [match]);
+
+  // Reset to 'summary' if active tab is no longer valid (e.g. non-cricket match)
+  useEffect(() => {
+    if (TABS.length > 0 && !TABS.find((t) => t.key === activeTab)) {
+      setActiveTab('summary');
+    }
+  }, [TABS, activeTab]);
 
   if (isLoading) {
     return (
@@ -130,16 +174,27 @@ export default function MatchDetail() {
   const homeTeam = match.teams?.home;
   const awayTeam = match.teams?.away;
 
-  // Derive display score from score object
-  const homeScore = score?.home?.goals ?? score?.home?.score ?? score?.currentInningsData?.runs ?? null;
-  const awayScore = score?.away?.goals ?? score?.away?.score ?? score?.innings?.[0]?.runs ?? null;
-  const homeWickets = score?.currentInningsData?.wickets ?? null;
+  // Cricket: find each team's innings by battingTeam field
+  let homeScore = null, awayScore = null, homeWickets = null, awayWickets = null;
+  if (match.sport === 'cricket' && score) {
+    const allInnings = [...(score.innings || [])];
+    const cur = score.currentInningsData;
+    if (cur) allInnings.push(cur);
+
+    const homeInn = allInnings.find((i) => i.battingTeam === 'home');
+    const awayInn = allInnings.find((i) => i.battingTeam === 'away');
+    if (homeInn) { homeScore = homeInn.runs ?? 0; homeWickets = homeInn.wickets ?? null; }
+    if (awayInn) { awayScore = awayInn.runs ?? 0; awayWickets = awayInn.wickets ?? null; }
+  } else {
+    homeScore = score?.homeGoals ?? score?.homeScore ?? score?.home?.goals ?? score?.home?.score ?? null;
+    awayScore = score?.awayGoals ?? score?.awayScore ?? score?.away?.goals ?? score?.away?.score ?? null;
+  }
 
   const statusConfig = {
-    live:      { label: 'LIVE',      bg: 'bg-red-500', pulse: true },
-    completed: { label: 'COMPLETED', bg: 'bg-white/20', pulse: false },
-    scheduled: { label: 'UPCOMING',  bg: 'bg-white/20', pulse: false },
-    paused:    { label: 'PAUSED',    bg: 'bg-amber-400', pulse: false },
+    live:      { label: 'LIVE',      bg: 'bg-red-500',    pulse: true  },
+    completed: { label: 'COMPLETED', bg: 'bg-white/20',   pulse: false },
+    scheduled: { label: 'UPCOMING',  bg: 'bg-white/20',   pulse: false },
+    paused:    { label: 'PAUSED',    bg: 'bg-amber-400',  pulse: false },
   };
   const sc = statusConfig[match.status] || statusConfig.scheduled;
 
@@ -153,7 +208,7 @@ export default function MatchDetail() {
         <FiArrowLeft size={16} /> Back
       </button>
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <div className={`bg-gradient-to-br ${sportGradient} rounded-3xl overflow-hidden shadow-xl`}>
         <div className="px-6 pt-6 pb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -180,15 +235,13 @@ export default function MatchDetail() {
         {/* Teams & Score */}
         <div className="px-6 py-6">
           <div className="flex items-center justify-between gap-4">
-            {/* Home */}
             <div className="flex-1 text-center">
               <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-xl font-black text-white">{(homeTeam?.name || 'Home')[0]}</span>
+                <span className="text-xl font-black text-white">{(homeTeam?.name || 'H')[0]}</span>
               </div>
               <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{homeTeam?.name || 'Home Team'}</p>
             </div>
 
-            {/* Score */}
             <div className="text-center min-w-[100px]">
               {homeScore !== null || awayScore !== null ? (
                 <div>
@@ -197,10 +250,14 @@ export default function MatchDetail() {
                       {homeScore ?? '-'}{homeWickets !== null ? `/${homeWickets}` : ''}
                     </span>
                     <span className="text-white/40 text-2xl">–</span>
-                    <span className="text-4xl font-black text-white tabular-nums">{awayScore ?? '-'}</span>
+                    <span className="text-4xl font-black text-white tabular-nums">
+                      {awayScore ?? '-'}{awayWickets !== null ? `/${awayWickets}` : ''}
+                    </span>
                   </div>
-                  {match.status === 'live' && score?.currentOver && (
-                    <p className="text-white/60 text-xs mt-1">{score.currentOver} overs</p>
+                  {match.status === 'live' && score?.currentInningsData && (
+                    <p className="text-white/60 text-xs mt-1">
+                      {score.currentInningsData.overs ?? 0}.{score.currentInningsData.balls ?? 0} overs
+                    </p>
                   )}
                 </div>
               ) : (
@@ -215,21 +272,26 @@ export default function MatchDetail() {
               )}
             </div>
 
-            {/* Away */}
             <div className="flex-1 text-center">
               <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-xl font-black text-white">{(awayTeam?.name || 'Away')[0]}</span>
+                <span className="text-xl font-black text-white">{(awayTeam?.name || 'A')[0]}</span>
               </div>
               <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{awayTeam?.name || 'Away Team'}</p>
             </div>
           </div>
 
-          {/* Result for completed */}
+          {/* Result */}
           {match.status === 'completed' && match.result && (
             <div className="mt-4 bg-white/10 rounded-2xl px-4 py-2.5 text-center">
               <p className="text-white font-bold text-sm">
-                {match.result.winner ? `${match.result.winner} won` : 'Match drawn'}
-                {match.result.margin ? ` by ${match.result.margin}` : ''}
+                {match.result.summary
+                  ? match.result.summary
+                  : match.result.winner === 'home'
+                    ? `${homeTeam?.name || 'Home'} won`
+                    : match.result.winner === 'away'
+                      ? `${awayTeam?.name || 'Away'} won`
+                      : 'Match drawn'}
+                {!match.result.summary && match.result.margin ? ` by ${match.result.margin}` : ''}
               </p>
             </div>
           )}
@@ -253,17 +315,18 @@ export default function MatchDetail() {
         </button>
       )}
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex border-b border-gray-100">
+        {/* Tab bar — horizontally scrollable */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-100">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 text-sm font-semibold transition ${
+              className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-3.5 text-sm font-semibold transition whitespace-nowrap ${
                 activeTab === key
                   ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50'
               }`}>
-              <Icon size={14} /> {label}
+              <Icon size={13} /> {label}
             </button>
           ))}
         </div>
@@ -273,7 +336,12 @@ export default function MatchDetail() {
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}>
 
-            {/* Scorecard Tab */}
+            {/* Summary */}
+            {activeTab === 'summary' && (
+              <MatchSummaryTab match={match} score={score} />
+            )}
+
+            {/* Scorecard */}
             {activeTab === 'scorecard' && (
               <div className="p-4">
                 {ScoreboardComponent && score ? (
@@ -297,7 +365,27 @@ export default function MatchDetail() {
               </div>
             )}
 
-            {/* Teams Tab */}
+            {/* Commentary — cricket only */}
+            {activeTab === 'commentary' && (
+              <CommentaryTab commentary={commentary} />
+            )}
+
+            {/* Stats — cricket only */}
+            {activeTab === 'stats' && (
+              <CricketStatsTab score={score} match={match} />
+            )}
+
+            {/* Overs — cricket only */}
+            {activeTab === 'overs' && (
+              <CricketOversTab score={score} match={match} />
+            )}
+
+            {/* Table — only if tournament */}
+            {activeTab === 'table' && match.tournament && (
+              <TournamentTableTab tournament={match.tournament} />
+            )}
+
+            {/* Teams */}
             {activeTab === 'teams' && (
               <div className="p-4 space-y-4">
                 {[
@@ -331,30 +419,6 @@ export default function MatchDetail() {
               </div>
             )}
 
-            {/* Info Tab */}
-            {activeTab === 'info' && (
-              <div className="p-4 space-y-3">
-                {[
-                  { label: 'Status',       value: match.status,      show: !!match.status },
-                  { label: 'Sport',        value: match.sport?.replace('_', ' '), show: !!match.sport },
-                  { label: 'Format',       value: typeof match.format === 'object'
-                      ? (match.format?.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : null)
-                      : match.format,
-                    show: !!match.format },
-                  { label: 'Match Type',   value: match.matchType,   show: !!match.matchType },
-                  { label: 'Tournament',   value: match.tournament?.name, show: !!match.tournament },
-                  { label: 'Venue',        value: match.venue?.name, show: !!match.venue },
-                  { label: 'Scheduled',    value: match.scheduledAt ? new Date(match.scheduledAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null, show: !!match.scheduledAt },
-                  { label: 'Started',      value: match.startedAt   ? new Date(match.startedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null,   show: !!match.startedAt },
-                  { label: 'Completed',    value: match.completedAt ? new Date(match.completedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null, show: !!match.completedAt },
-                ].filter((r) => r.show && r.value).map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                    <span className="text-sm text-gray-400 font-medium">{label}</span>
-                    <span className="text-sm text-gray-900 font-semibold capitalize">{value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </motion.div>
         </AnimatePresence>
       </div>

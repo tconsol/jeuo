@@ -298,6 +298,61 @@ class TournamentService {
     return fixtures;
   }
 
+  static async findByCreator(creatorId) {
+    return Tournament.find({ creator: creatorId })
+      .populate('creator', 'name avatar')
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  static async addTeamDirectly(tournamentId, teamId, creatorId) {
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.creator.toString() !== creatorId.toString()) throw new Error('Not authorized');
+    if (tournament.teams.length >= tournament.maxTeams) throw new Error('Tournament is full');
+
+    const alreadyAdded = tournament.teams.find(t => t._id?.toString() === teamId.toString());
+    if (alreadyAdded) throw new Error('Team already in tournament');
+
+    const Team = require('../models/Team');
+    const team = await Team.findById(teamId).populate('players.user', 'name');
+    if (!team) throw new Error('Team not found');
+
+    const activePlayers = team.players
+      .filter(p => p.status === 'active')
+      .map(p => p.user._id || p.user);
+
+    tournament.teams.push({
+      _id: team._id,
+      name: team.name,
+      captain: team.captain || team.owner,
+      players: activePlayers,
+      seed: tournament.teams.length + 1,
+    });
+
+    await tournament.save();
+    return tournament;
+  }
+
+  static async removeTeamFromTournament(tournamentId, teamId, creatorId) {
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.creator.toString() !== creatorId.toString()) throw new Error('Not authorized');
+
+    const idx = tournament.teams.findIndex(t => t._id?.toString() === teamId.toString());
+    if (idx === -1) throw new Error('Team not found in tournament');
+    tournament.teams.splice(idx, 1);
+    await tournament.save();
+    return tournament;
+  }
+
+  static async deleteTournament(tournamentId, creatorId) {
+    const tournament = await Tournament.findOne({ _id: tournamentId, creator: creatorId });
+    if (!tournament) throw new Error('Tournament not found or not authorized');
+    await Tournament.deleteOne({ _id: tournamentId });
+    return { deleted: true };
+  }
+
   static async updatePointsTable(tournamentId, matchResult) {
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');

@@ -129,6 +129,42 @@ exports.rejectTeamRequest = async (req, res, next) => {
   }
 };
 
+exports.getMyTournaments = async (req, res, next) => {
+  try {
+    const tournaments = await TournamentService.findByCreator(req.user._id);
+    res.json({ success: true, data: { tournaments } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.addTeamDirectly = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.addTeamDirectly(req.params.id, req.body.teamId, req.user._id);
+    res.json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.removeTeam = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.removeTeamFromTournament(req.params.id, req.params.teamId, req.user._id);
+    res.json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.deleteTournament = async (req, res, next) => {
+  try {
+    await TournamentService.deleteTournament(req.params.id, req.user._id);
+    res.json({ success: true, data: { message: 'Tournament deleted' } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
 exports.getTeamRequests = async (req, res, next) => {
   try {
     const tournament = await TournamentService.findById(req.params.id);
