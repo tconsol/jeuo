@@ -3,17 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SportIcon } from '../utils/sportIcons';
 import api from '../lib/api';
-import { FiMapPin, FiStar, FiSearch } from 'react-icons/fi';
+import { FiMapPin, FiStar, FiSearch, FiFilter } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { getVenueImageUrl } from '../utils';
 
 const SPORTS = [
   { id: 'all',        label: 'All Sports' },
-  { id: 'cricket',    label: 'Cricket' },
-  { id: 'football',   label: 'Football' },
+  { id: 'cricket',    label: 'Cricket'    },
+  { id: 'football',   label: 'Football'   },
   { id: 'basketball', label: 'Basketball' },
-  { id: 'tennis',     label: 'Tennis' },
-  { id: 'badminton',  label: 'Badminton' },
+  { id: 'tennis',     label: 'Tennis'     },
+  { id: 'badminton',  label: 'Badminton'  },
   { id: 'volleyball', label: 'Volleyball' },
 ];
 
@@ -24,11 +24,10 @@ export default function Venues() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['venues', selectedSport],
-    queryFn: async () => {
+    queryFn: () => {
       const params = {};
       if (selectedSport !== 'all') params.sport = selectedSport;
-      const { data } = await api.get('/venues', { params });
-      return data.data;
+      return api.get('/venues', { params }).then((r) => r.data.data?.venues || []);
     },
   });
 
@@ -40,107 +39,130 @@ export default function Venues() {
     setSearchParams(newParams);
   };
 
-  const venues = (data?.venues || []).filter((v) =>
-    !search || v.name?.toLowerCase().includes(search.toLowerCase()) ||
+  const venues = (data || []).filter((v) =>
+    !search ||
+    v.name?.toLowerCase().includes(search.toLowerCase()) ||
     v.location?.address?.toLowerCase().includes(search.toLowerCase()) ||
     v.location?.city?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-5 pb-24">
+
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-gray-900">Venues</h1>
-        <p className="text-gray-500 mt-1">Discover the perfect place to play near you</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-black text-gray-900">Venues</h1>
+        <p className="text-gray-400 text-xs mt-0.5">
+          {venues.length} venue{venues.length !== 1 ? 's' : ''} · book your next game
+        </p>
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search venues or areas…"
-            className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white shadow-sm"
-          />
-        </div>
+      {/* Search */}
+      <div className="relative mb-4">
+        <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search venues, areas, cities…"
+          className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white shadow-sm"
+        />
       </div>
 
-      {/* Sport filter pills */}
-      <div className="flex gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+      {/* Sport pills */}
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-hide">
         {SPORTS.map((sport) => (
-          <button
-            key={sport.id}
-            onClick={() => handleSportChange(sport.id)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          <button key={sport.id} onClick={() => handleSportChange(sport.id)}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
               selectedSport === sport.id
-                ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            {sport.id !== 'all' && <SportIcon sport={sport.id} size={14} />}
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
+            }`}>
+            {sport.id !== 'all' && (
+              <SportIcon sport={sport.id} size={12} className={selectedSport === sport.id ? 'text-white' : 'text-gray-400'} />
+            )}
             {sport.label}
           </button>
         ))}
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-6">
-          Error loading venues: {error.message}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm mb-5">
+          Failed to load venues. Please try again.
         </div>
       )}
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Loading */}
+      {isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-card animate-pulse">
-              <div className="h-48 bg-gray-100" />
-              <div className="p-5">
-                <div className="h-5 bg-gray-100 rounded-lg w-2/3 mb-3" />
-                <div className="h-4 bg-gray-100 rounded-lg w-1/2" />
+            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
+              <div className="h-44 bg-gray-100" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 bg-gray-100 rounded-lg w-2/3" />
+                <div className="h-3 bg-gray-100 rounded-lg w-1/2" />
               </div>
             </div>
           ))}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      )}
+
+      {/* Grid */}
+      {!isLoading && venues.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {venues.map((venue, i) => (
-            <motion.div
-              key={venue._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-            >
-              <Link to={`/venues/${venue._id}`} className="block bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 group border border-gray-100">
-                <div className="h-48 bg-gradient-to-br from-primary-50 to-primary-100 overflow-hidden relative">
-                  <img src={getVenueImageUrl(venue)} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  {venue.sport && (
-                    <span className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-gray-700 px-2.5 py-1 rounded-full text-xs font-medium">
-                      <SportIcon sport={venue.sport} size={12} /> {venue.sport}
-                    </span>
+            <motion.div key={venue._id}
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}>
+              <Link to={`/venues/${venue._id}`}
+                className="block bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group active:scale-[0.99]">
+
+                {/* Image */}
+                <div className="h-44 bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden relative">
+                  <img
+                    src={getVenueImageUrl(venue)}
+                    alt={venue.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Overlays */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                  {venue.sports?.length > 0 && (
+                    <div className="absolute top-3 left-3 flex gap-1.5">
+                      {venue.sports.slice(0, 2).map((s) => (
+                        <span key={s} className="flex items-center gap-1 bg-white/90 backdrop-blur-sm text-gray-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          <SportIcon sport={s} size={10} /> {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {venue.rating > 0 && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-black">
+                      <FiStar size={9} fill="currentColor" /> {venue.rating.toFixed(1)}
+                    </div>
                   )}
                 </div>
-                <div className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0 mr-3">
-                      <h3 className="font-semibold text-lg text-gray-900 group-hover:text-primary-600 transition-colors truncate">{venue.name}</h3>
-                      <p className="text-gray-500 text-sm flex items-center gap-1 mt-1">
-                        <FiMapPin size={13} className="flex-shrink-0" />
-                        <span className="truncate">{venue.location?.city || venue.location?.address || 'Location'}</span>
+
+                {/* Info */}
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors text-sm truncate mb-1">
+                    {venue.name}
+                  </h3>
+                  <p className="text-gray-400 text-xs flex items-center gap-1 mb-3">
+                    <FiMapPin size={11} className="flex-shrink-0" />
+                    <span className="truncate">{venue.location?.city || venue.location?.address || 'Location'}</span>
+                  </p>
+                  <div className="flex items-center justify-between">
+                    {venue.priceRange ? (
+                      <p className="text-sm font-black text-indigo-600">
+                        ₹{venue.priceRange.min}<span className="text-gray-400 font-normal text-xs">/hr</span>
                       </p>
-                    </div>
-                    {venue.rating > 0 && (
-                      <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-lg flex-shrink-0">
-                        <FiStar size={12} fill="currentColor" />
-                        <span className="text-xs font-semibold">{venue.rating.toFixed(1)}</span>
-                      </div>
+                    ) : (
+                      <span />
                     )}
+                    <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                      {venue.courtCount ? `${venue.courtCount} court${venue.courtCount > 1 ? 's' : ''}` : 'Book now'}
+                    </span>
                   </div>
-                  {venue.priceRange && (
-                    <p className="text-sm text-primary-600 font-medium mt-3">From ₹{venue.priceRange.min}<span className="text-gray-400 font-normal">/hr</span></p>
-                  )}
                 </div>
               </Link>
             </motion.div>
@@ -148,16 +170,18 @@ export default function Venues() {
         </div>
       )}
 
-      {!isLoading && venues.length === 0 && (
+      {/* Empty */}
+      {!isLoading && venues.length === 0 && !error && (
         <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FiMapPin size={28} className="text-gray-400" />
+          <div className="w-16 h-16 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-gray-100">
+            <FiMapPin size={28} className="text-gray-200" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900">No venues found</h3>
-          <p className="text-gray-500 mt-2">{search ? `No results for "${search}". Try a different search.` : 'Try changing the sport filter.'}</p>
+          <p className="text-sm font-bold text-gray-600">No venues found</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {search ? `No results for "${search}". Try a different search.` : 'Try a different sport filter.'}
+          </p>
         </div>
       )}
     </div>
   );
 }
-

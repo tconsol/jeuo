@@ -7,10 +7,21 @@ class TournamentService {
     const tournament = new Tournament({
       ...data,
       creator: creatorId,
-      status: 'draft',
+      status: data.status || 'registration_open',
     });
     await tournament.save();
     logger.info({ tournamentId: tournament._id }, 'Tournament created');
+    return tournament;
+  }
+
+  static async updateStatus(tournamentId, newStatus, userId) {
+    const VALID = ['draft', 'registration_open', 'registration_closed', 'in_progress', 'completed', 'cancelled'];
+    if (!VALID.includes(newStatus)) throw new Error('Invalid status');
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.creator.toString() !== userId.toString()) throw new Error('Not authorized');
+    tournament.status = newStatus;
+    await tournament.save();
     return tournament;
   }
 
@@ -38,6 +49,126 @@ class TournamentService {
     return { tournaments, total, page, pages: Math.ceil(total / limit) };
   }
 
+  /**
+   * Request to join tournament with a team
+   * Creates a request that tournament admin must approve
+   */
+  static async requestJoinTournament(tournamentId, teamData, userId) {
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.status !== 'registration_open') throw new Error('Registration is closed');
+
+    // Check if team is already registered or requested
+    const existing = tournament.teamRequests?.find(tr =>
+      tr.team?.toString() === teamData.teamId?.toString()
+    );
+    if (existing) throw new Error('Team already requested or registered');
+
+    if (!tournament.teamRequests) tournament.teamRequests = [];
+
+    // Add team request
+    tournament.teamRequests.push({
+      team: teamData.teamId,
+      teamName: teamData.teamName,
+      captain: userId,
+      status: 'pending',
+      requestedAt: new Date(),
+    });
+
+    await tournament.save();
+
+    // Notify tournament creator
+    const NotificationService = require('./notification.service');
+    await NotificationService.create({
+      user: tournament.creator,
+      type: 'tournament_team_request',
+      title: 'Team Join Request',
+      body: `${teamData.teamName} has requested to join your tournament ${tournament.name}`,
+      data: { tournamentId: tournament._id, teamName: teamData.teamName },
+    });
+
+    return tournament;
+  }
+
+  /**
+   * Approve team request to join tournament
+   */
+  static async approveTeamRequest(tournamentId, requestIndex, creatorId) {
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.creator.toString() !== creatorId.toString()) {
+      throw new Error('Only tournament creator can approve requests');
+    }
+
+    const request = tournament.teamRequests?.[requestIndex];
+    if (!request) throw new Error('Request not found');
+    if (request.status !== 'pending') throw new Error('Request already processed');
+
+    // Check max teams limit
+    if (tournament.teams.length >= tournament.maxTeams) {
+      throw new Error('Tournament is full');
+    }
+
+    // Add team to tournament
+    tournament.teams.push({
+      _id: request.team,
+      name: request.teamName,
+      captain: request.captain,
+      players: [], // Will be populated from team data
+      seed: tournament.teams.length + 1,
+      group: null,
+    });
+
+    request.status = 'approved';
+    await tournament.save();
+
+    // Notify team captain
+    const NotificationService = require('./notification.service');
+    await NotificationService.create({
+      user: request.captain,
+      type: 'tournament_team_approved',
+      title: 'Team Approved',
+      body: `Your team has been approved to join tournament ${tournament.name}`,
+      data: { tournamentId: tournament._id },
+    });
+
+    return tournament;
+  }
+
+  /**
+   * Reject team request
+   */
+  static async rejectTeamRequest(tournamentId, requestIndex, creatorId, reason) {
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.creator.toString() !== creatorId.toString()) {
+      throw new Error('Only tournament creator can reject requests');
+    }
+
+    const request = tournament.teamRequests?.[requestIndex];
+    if (!request) throw new Error('Request not found');
+    if (request.status !== 'pending') throw new Error('Request already processed');
+
+    request.status = 'rejected';
+    request.rejectionReason = reason;
+    await tournament.save();
+
+    // Notify team captain
+    const NotificationService = require('./notification.service');
+    await NotificationService.create({
+      user: request.captain,
+      type: 'tournament_team_rejected',
+      title: 'Team Request Rejected',
+      body: `Your team's request to join ${tournament.name} was rejected. Reason: ${reason}`,
+      data: { tournamentId: tournament._id },
+    });
+
+    return tournament;
+  }
+
+  /**
+   * Register team directly (old method, still supported)
+   */
   static async registerTeam(tournamentId, teamData) {
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
@@ -45,7 +176,7 @@ class TournamentService {
     if (tournament.teams.length >= tournament.maxTeams) throw new Error('Tournament is full');
 
     const existing = tournament.teams.find(t =>
-      t.captain.toString() === teamData.captain.toString()
+      t.captain?.toString() === teamData.captain?.toString()
     );
     if (existing) throw new Error('Team already registered');
 

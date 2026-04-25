@@ -1,6 +1,15 @@
 const TournamentService = require('../services/tournament.service');
 const { AppError } = require('../middleware/error');
 
+exports.updateStatus = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.updateStatus(req.params.id, req.body.status, req.user._id);
+    res.json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
 exports.create = async (req, res, next) => {
   try {
     const tournament = await TournamentService.create(req.body, req.user._id);
@@ -74,6 +83,63 @@ exports.getStandings = async (req, res, next) => {
       points: team.points || 0,
     })).sort((a, b) => b.points - a.points);
     res.json({ success: true, data: { standings } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+// Team request endpoints
+exports.requestJoinTournament = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.requestJoinTournament(
+      req.params.id,
+      req.body,
+      req.user._id
+    );
+    res.status(201).json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.approveTeamRequest = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.approveTeamRequest(
+      req.params.id,
+      parseInt(req.params.requestIndex),
+      req.user._id
+    );
+    res.json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.rejectTeamRequest = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.rejectTeamRequest(
+      req.params.id,
+      parseInt(req.params.requestIndex),
+      req.user._id,
+      req.body.reason
+    );
+    res.json({ success: true, data: { tournament } });
+  } catch (err) {
+    next(new AppError(err.message, 400));
+  }
+};
+
+exports.getTeamRequests = async (req, res, next) => {
+  try {
+    const tournament = await TournamentService.findById(req.params.id);
+    if (!tournament) return next(new AppError('Tournament not found', 404));
+
+    // Only creator can see requests
+    if (tournament.creator.toString() !== req.user._id.toString()) {
+      return next(new AppError('Not authorized', 403));
+    }
+
+    res.json({ success: true, data: { teamRequests: tournament.teamRequests || [] } });
   } catch (err) {
     next(new AppError(err.message, 400));
   }

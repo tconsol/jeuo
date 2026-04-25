@@ -1,13 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { SportIcon } from '../utils/sportIcons';
-import { FiMapPin, FiClock, FiTarget, FiBarChart2 } from 'react-icons/fi';
+import { FiMapPin, FiClock, FiTarget, FiBarChart2, FiUsers, FiInfo, FiArrowLeft, FiWifi } from 'react-icons/fi';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import { connectMatchSocket, disconnectMatchSocket } from '../lib/socket';
-import { setLiveScore, addEvent, setEvents, setConnected, resetMatch } from '../store/slices/matchSlice';
+import { setLiveScore, addEvent, setConnected, resetMatch } from '../store/slices/matchSlice';
 
 import CricketScoreboard from '../components/scoring/CricketScoreboard';
 import FootballScoreboard from '../components/scoring/FootballScoreboard';
@@ -17,50 +17,60 @@ import RacketScoreboard from '../components/scoring/RacketScoreboard';
 import VolleyballScoreboard from '../components/scoring/VolleyballScoreboard';
 
 const SCOREBOARD_MAP = {
-  cricket: CricketScoreboard,
-  football: FootballScoreboard,
-  basketball: BasketballScoreboard,
-  tennis: TennisScoreboard,
-  badminton: RacketScoreboard,
+  cricket:      CricketScoreboard,
+  football:     FootballScoreboard,
+  basketball:   BasketballScoreboard,
+  tennis:       TennisScoreboard,
+  badminton:    RacketScoreboard,
   table_tennis: RacketScoreboard,
-  volleyball: VolleyballScoreboard,
+  volleyball:   VolleyballScoreboard,
 };
 
 const SPORT_GRADIENT = {
-  cricket:      'from-emerald-600 via-emerald-700 to-teal-700',
-  football:     'from-green-600 via-green-700 to-emerald-700',
-  basketball:   'from-orange-500 via-orange-600 to-amber-600',
-  tennis:       'from-lime-500 via-lime-600 to-green-600',
-  badminton:    'from-blue-600 via-blue-700 to-indigo-700',
-  volleyball:   'from-yellow-500 via-yellow-600 to-amber-600',
-  table_tennis: 'from-red-500 via-red-600 to-rose-600',
+  cricket:      'from-emerald-600 via-emerald-700 to-teal-800',
+  football:     'from-green-600 via-green-700 to-emerald-800',
+  basketball:   'from-orange-500 via-orange-600 to-amber-700',
+  tennis:       'from-lime-500 via-lime-600 to-green-700',
+  badminton:    'from-blue-600 via-blue-700 to-indigo-800',
+  volleyball:   'from-yellow-500 via-yellow-600 to-amber-700',
+  table_tennis: 'from-red-500 via-red-600 to-rose-700',
 };
+
+const TABS = [
+  { key: 'scorecard', label: 'Scorecard', icon: FiBarChart2 },
+  { key: 'teams',     label: 'Teams',     icon: FiUsers },
+  { key: 'info',      label: 'Info',      icon: FiInfo },
+];
 
 export default function MatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { liveScore, isConnected } = useSelector((s) => s.match);
+  const [activeTab, setActiveTab] = useState('scorecard');
 
-  const { data: matchData, isLoading } = useQuery({
+  // Query match metadata from /matches/:id
+  const { data: match, isLoading, isError } = useQuery({
     queryKey: ['match', id],
-    queryFn: async () => {
-      const { data } = await api.get(`/scoring/${id}`);
-      return data.data;
-    },
+    queryFn: () => api.get(`/matches/${id}`).then((r) => r.data.data.match),
+    retry: 1,
   });
 
-  const match = matchData?.match;
-  const initialScore = matchData?.score;
+  // Query score data separately (only after match loads)
+  const { data: scoreData } = useQuery({
+    queryKey: ['match-score', id],
+    queryFn: () => api.get(`/scoring/${id}`).then((r) => r.data.data?.score || r.data.data),
+    enabled: !!match,
+    retry: false,
+  });
 
-  // Set score from initial fetch
   useEffect(() => {
-    if (initialScore) {
-      dispatch(setLiveScore({ score: initialScore, scoreVersion: match?.scoringVersion }));
+    if (scoreData) {
+      dispatch(setLiveScore({ score: scoreData, scoreVersion: match?.scoringVersion }));
     }
-  }, [initialScore, match, dispatch]);
+  }, [scoreData, match, dispatch]);
 
-  // Connect to live socket
+  // Socket — only for live matches
   useEffect(() => {
     if (!id || match?.status !== 'live') return;
 
@@ -71,19 +81,13 @@ export default function MatchDetail() {
       dispatch(setConnected(true));
       socket.emit('join:match', id);
     });
-
     socket.on('disconnect', () => dispatch(setConnected(false)));
-
     socket.on('score:update', (data) => {
       dispatch(setLiveScore({ score: data.score, scoreVersion: data.scoreVersion }));
       if (data.event) dispatch(addEvent(data.event));
     });
-
     socket.on('match:status', (data) => {
-      // Force refetch
-      if (data.status === 'completed') {
-        window.location.reload();
-      }
+      if (data.status === 'completed') window.location.reload();
     });
 
     return () => {
@@ -95,230 +99,265 @@ export default function MatchDetail() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="space-y-4">
-          <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
-          <div className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
-          <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
-        </div>
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <div className="h-10 w-24 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-64 bg-gray-100 rounded-3xl animate-pulse" />
+        <div className="h-12 bg-gray-100 rounded-2xl animate-pulse" />
+        <div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />
       </div>
     );
   }
 
-  if (!match) {
+  if (isError || !match) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <SportIcon sport="cricket" size={40} />
+        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-2">
+          <FiBarChart2 size={36} className="text-red-300" />
         </div>
-        <p className="text-gray-500 font-medium">Match not found</p>
-        <button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition text-sm font-medium">
+        <h2 className="text-xl font-bold text-gray-800">Match not found</h2>
+        <p className="text-gray-400 text-sm max-w-xs">This match may have been removed or the link is incorrect.</p>
+        <button onClick={() => navigate(-1)}
+          className="mt-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">
           ← Go Back
         </button>
       </div>
     );
   }
 
-  const score = liveScore || initialScore;
+  const score = liveScore || scoreData;
   const ScoreboardComponent = SCOREBOARD_MAP[match.sport];
   const sportGradient = SPORT_GRADIENT[match.sport] || SPORT_GRADIENT.cricket;
   const homeTeam = match.teams?.home;
   const awayTeam = match.teams?.away;
-  const homeScore = score?.home?.goals ?? score?.currentInningsData?.runs ?? 0;
-  const awayScore = score?.away?.goals ?? score?.innings?.[0]?.runs ?? 0;
+
+  // Derive display score from score object
+  const homeScore = score?.home?.goals ?? score?.home?.score ?? score?.currentInningsData?.runs ?? null;
+  const awayScore = score?.away?.goals ?? score?.away?.score ?? score?.innings?.[0]?.runs ?? null;
+  const homeWickets = score?.currentInningsData?.wickets ?? null;
+
+  const statusConfig = {
+    live:      { label: 'LIVE',      bg: 'bg-red-500', pulse: true },
+    completed: { label: 'COMPLETED', bg: 'bg-white/20', pulse: false },
+    scheduled: { label: 'UPCOMING',  bg: 'bg-white/20', pulse: false },
+    paused:    { label: 'PAUSED',    bg: 'bg-amber-400', pulse: false },
+  };
+  const sc = statusConfig[match.status] || statusConfig.scheduled;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-4xl mx-auto px-4 py-6 pb-20 space-y-5"
-    >
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
-      >
-        ← Back
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className="max-w-4xl mx-auto px-4 py-5 pb-24 space-y-4">
+
+      {/* Back */}
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition font-medium">
+        <FiArrowLeft size={16} /> Back
       </button>
 
-      {/* Hero header */}
-      <div className={`bg-gradient-to-br ${sportGradient} rounded-3xl p-8 text-white shadow-lg`}>
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <div className="mb-2"><SportIcon sport={match.sport} size={52} className="text-white/90" /></div>
-            <h1 className="text-3xl font-bold capitalize">{match.sport?.replace('_', ' ')}</h1>
-            <p className="text-white/60 text-sm mt-1">Match Details</p>
+      {/* Hero */}
+      <div className={`bg-gradient-to-br ${sportGradient} rounded-3xl overflow-hidden shadow-xl`}>
+        <div className="px-6 pt-6 pb-3 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center">
+              <SportIcon sport={match.sport} size={22} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-black capitalize text-base">{match.sport?.replace('_', ' ')}</p>
+              <p className="text-white/50 text-xs">{match.tournament?.name || 'Friendly Match'}</p>
+            </div>
           </div>
-          <div className="text-right">
-            {match.status === 'live' && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-red-500 text-white px-3 py-1.5 rounded-full animate-pulse">
-                <span className="w-2 h-2 bg-white rounded-full" />
-                LIVE NOW
+          <div className="flex items-center gap-2">
+            {match.status === 'live' && isConnected && (
+              <span className="flex items-center gap-1 text-[10px] text-white/70 font-medium">
+                <FiWifi size={10} className="text-green-300" /> Live
               </span>
             )}
-            {match.status === 'scheduled' && (
-              <span className="inline-block text-xs font-bold bg-white/15 text-white px-3 py-1.5 rounded-full">
-                SCHEDULED
-              </span>
-            )}
-            {match.status === 'completed' && (
-              <span className="inline-block text-xs font-bold bg-white/15 text-white px-3 py-1.5 rounded-full">
-                COMPLETED
-              </span>
-            )}
+            <span className={`text-[11px] font-black text-white px-3 py-1.5 rounded-full ${sc.bg} ${sc.pulse ? 'animate-pulse' : ''}`}>
+              {sc.label}
+            </span>
           </div>
         </div>
 
-        {/* Score display */}
-        <div className="flex items-center justify-center gap-8 my-8">
-          <div className="text-center">
-            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">Home</p>
-            <p className="text-5xl font-extrabold tabular-nums">{homeScore}</p>
-            <p className="text-sm text-white/70 mt-1">{homeTeam?.name || 'Team A'}</p>
+        {/* Teams & Score */}
+        <div className="px-6 py-6">
+          <div className="flex items-center justify-between gap-4">
+            {/* Home */}
+            <div className="flex-1 text-center">
+              <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                <span className="text-xl font-black text-white">{(homeTeam?.name || 'Home')[0]}</span>
+              </div>
+              <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{homeTeam?.name || 'Home Team'}</p>
+            </div>
+
+            {/* Score */}
+            <div className="text-center min-w-[100px]">
+              {homeScore !== null || awayScore !== null ? (
+                <div>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-4xl font-black text-white tabular-nums">
+                      {homeScore ?? '-'}{homeWickets !== null ? `/${homeWickets}` : ''}
+                    </span>
+                    <span className="text-white/40 text-2xl">–</span>
+                    <span className="text-4xl font-black text-white tabular-nums">{awayScore ?? '-'}</span>
+                  </div>
+                  {match.status === 'live' && score?.currentOver && (
+                    <p className="text-white/60 text-xs mt-1">{score.currentOver} overs</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-5xl font-black text-white/30">VS</p>
+                  {match.scheduledAt && (
+                    <p className="text-white/60 text-xs mt-1">
+                      {new Date(match.scheduledAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Away */}
+            <div className="flex-1 text-center">
+              <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                <span className="text-xl font-black text-white">{(awayTeam?.name || 'Away')[0]}</span>
+              </div>
+              <p className="text-white font-bold text-sm truncate max-w-[100px] mx-auto">{awayTeam?.name || 'Away Team'}</p>
+            </div>
           </div>
-          <div className="text-3xl text-white/40">–</div>
-          <div className="text-center">
-            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">Away</p>
-            <p className="text-5xl font-extrabold tabular-nums">{awayScore}</p>
-            <p className="text-sm text-white/70 mt-1">{awayTeam?.name || 'Team B'}</p>
-          </div>
+
+          {/* Result for completed */}
+          {match.status === 'completed' && match.result && (
+            <div className="mt-4 bg-white/10 rounded-2xl px-4 py-2.5 text-center">
+              <p className="text-white font-bold text-sm">
+                {match.result.winner ? `${match.result.winner} won` : 'Match drawn'}
+                {match.result.margin ? ` by ${match.result.margin}` : ''}
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Match info */}
-        <div className="space-y-2 text-sm text-white/80">
-          {match.venue && (
-            <p className="flex items-center gap-2 font-medium"><FiMapPin size={14} /> {match.venue.name}</p>
-          )}
-          {match.scheduledAt && (
-            <p className="flex items-center gap-2"><FiClock size={14} /> {new Date(match.scheduledAt).toLocaleString('en-IN', { 
-              day: 'numeric', month: 'short', year: 'numeric',
-              hour: '2-digit', minute: '2-digit'
-            })}</p>
-          )}
-          {match.format && (
-            <p className="flex items-center gap-2"><FiTarget size={14} /> {typeof match.format === 'object' ? (match.format.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : '-') : match.format}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Scoreboard */}
-      {ScoreboardComponent && score ? (
-        <ScoreboardComponent score={score} match={match} />
-      ) : (
-        match.status !== 'scheduled' && (
-          <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center text-gray-400">
-            No score data available
-          </div>
-        )
-      )}
-
-      {/* Match info cards */}
-      <div className="grid grid-cols-2 gap-3">
+        {/* Venue strip */}
         {match.venue && (
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 shadow-sm p-4 ring-1 ring-blue-50">
-            <p className="text-xs text-blue-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-1"><FiMapPin size={12} /> Venue</p>
-            <p className="font-semibold text-gray-900">{match.venue.name}</p>
-            {match.venue.location?.address && (
-              <p className="text-xs text-gray-500 mt-1">{match.venue.location.address}</p>
-            )}
-            {match.venue.location?.city && (
-              <p className="text-xs text-gray-400 mt-0.5">{match.venue.location.city}{match.venue.location.state ? `, ${match.venue.location.state}` : ''}</p>
-            )}
-          </div>
-        )}
-        
-        {match.format && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Format</p>
-            <p className="font-semibold text-gray-900">
-              {typeof match.format === 'object'
-                ? (match.format.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : '-')
-                : match.format}
-            </p>
-          </div>
-        )}
-
-        {match.createdAt && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Created</p>
-            <p className="font-semibold text-gray-900">{new Date(match.createdAt).toLocaleDateString()}</p>
-          </div>
-        )}
-
-        {match.matchType && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Type</p>
-            <p className="font-semibold text-gray-900 capitalize">{match.matchType}</p>
+          <div className="px-6 pb-4 flex items-center gap-2 text-white/60 text-xs">
+            <FiMapPin size={11} />
+            <span>{match.venue.name}{match.venue.location?.city ? `, ${match.venue.location.city}` : ''}</span>
           </div>
         )}
       </div>
 
-      {/* Teams details */}
-      <div className="grid grid-cols-1 gap-4">
-        {homeTeam && (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Home Team</p>
-              <p className="font-bold text-gray-900 mt-0.5">{homeTeam.name}</p>
-            </div>
-            {homeTeam.players && homeTeam.players.length > 0 && (
-              <div className="px-5 py-3 space-y-1">
-                <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Squad ({homeTeam.players.length})</p>
-                <div className="flex flex-wrap gap-1">
-                  {homeTeam.players.slice(0, 8).map((p, i) => (
-                    <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">
-                      {p.name || p}
-                    </span>
-                  ))}
-                  {homeTeam.players.length > 8 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg">
-                      +{homeTeam.players.length - 8} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {awayTeam && (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50/50 px-5 py-3 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Away Team</p>
-              <p className="font-bold text-gray-900 mt-0.5">{awayTeam.name}</p>
-            </div>
-            {awayTeam.players && awayTeam.players.length > 0 && (
-              <div className="px-5 py-3 space-y-1">
-                <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Squad ({awayTeam.players.length})</p>
-                <div className="flex flex-wrap gap-1">
-                  {awayTeam.players.slice(0, 8).map((p, i) => (
-                    <span key={i} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-lg">
-                      {p.name || p}
-                    </span>
-                  ))}
-                  {awayTeam.players.length > 8 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg">
-                      +{awayTeam.players.length - 8} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Action buttons */}
-      {match.status !== 'completed' && (
-        <div className="flex gap-3 pt-4">
-          <button
-            onClick={() => navigate(`/scoring/${id}`)}
-            className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-2xl transition active:scale-95"
-          >
-            <FiBarChart2 size={16} className="inline mr-1" /> View Live Scoring
-          </button>
-        </div>
+      {/* Live scoring CTA */}
+      {match.status === 'live' && (
+        <button onClick={() => navigate(`/scoring/${id}`)}
+          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-black text-sm shadow-lg shadow-red-200 active:scale-95 transition flex items-center justify-center gap-2">
+          <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+          View Live Scoring
+        </button>
       )}
+
+      {/* Tabs */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex border-b border-gray-100">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 text-sm font-semibold transition ${
+                activeTab === key
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div key={activeTab}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}>
+
+            {/* Scorecard Tab */}
+            {activeTab === 'scorecard' && (
+              <div className="p-4">
+                {ScoreboardComponent && score ? (
+                  <ScoreboardComponent score={score} match={match} />
+                ) : match.status === 'scheduled' ? (
+                  <div className="py-12 text-center">
+                    <FiClock size={36} className="text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 font-medium">Match hasn't started yet</p>
+                    {match.scheduledAt && (
+                      <p className="text-gray-300 text-sm mt-1">
+                        Starts {new Date(match.scheduledAt).toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center">
+                    <FiBarChart2 size={36} className="text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 font-medium">Score data not available</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Teams Tab */}
+            {activeTab === 'teams' && (
+              <div className="p-4 space-y-4">
+                {[
+                  { team: homeTeam, label: 'Home Team', colorClass: 'bg-indigo-50 text-indigo-700' },
+                  { team: awayTeam, label: 'Away Team', colorClass: 'bg-emerald-50 text-emerald-700' },
+                ].map(({ team, label, colorClass }) => team && (
+                  <div key={label} className="rounded-2xl border border-gray-100 overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-3 flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm ${colorClass}`}>
+                        {(team.name || '?')[0]}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{team.name}</p>
+                        <p className="text-[10px] text-gray-400">{label}</p>
+                      </div>
+                    </div>
+                    {team.players?.length > 0 && (
+                      <div className="px-4 py-3">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Squad · {team.players.length} players</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {team.players.map((p, i) => (
+                            <span key={i} className={`px-2.5 py-1 rounded-lg text-xs font-medium ${colorClass}`}>
+                              {p.name || p}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Info Tab */}
+            {activeTab === 'info' && (
+              <div className="p-4 space-y-3">
+                {[
+                  { label: 'Status',       value: match.status,      show: !!match.status },
+                  { label: 'Sport',        value: match.sport?.replace('_', ' '), show: !!match.sport },
+                  { label: 'Format',       value: typeof match.format === 'object'
+                      ? (match.format?.overs ? `${match.format.overs} overs${match.format.innings ? `, ${match.format.innings} innings` : ''}` : null)
+                      : match.format,
+                    show: !!match.format },
+                  { label: 'Match Type',   value: match.matchType,   show: !!match.matchType },
+                  { label: 'Tournament',   value: match.tournament?.name, show: !!match.tournament },
+                  { label: 'Venue',        value: match.venue?.name, show: !!match.venue },
+                  { label: 'Scheduled',    value: match.scheduledAt ? new Date(match.scheduledAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null, show: !!match.scheduledAt },
+                  { label: 'Started',      value: match.startedAt   ? new Date(match.startedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null,   show: !!match.startedAt },
+                  { label: 'Completed',    value: match.completedAt ? new Date(match.completedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null, show: !!match.completedAt },
+                ].filter((r) => r.show && r.value).map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                    <span className="text-sm text-gray-400 font-medium">{label}</span>
+                    <span className="text-sm text-gray-900 font-semibold capitalize">{value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

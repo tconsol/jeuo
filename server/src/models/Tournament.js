@@ -23,6 +23,15 @@ const pointsTableEntrySchema = new mongoose.Schema({
   setRatio: { type: Number, default: 0 },      // volleyball
 });
 
+const teamRequestSchema = new mongoose.Schema({
+  team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
+  teamName: String,
+  captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  requestedAt: Date,
+  rejectionReason: String,
+});
+
 const tournamentSchema = new mongoose.Schema({
   creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true, trim: true },
@@ -55,6 +64,9 @@ const tournamentSchema = new mongoose.Schema({
     seed: Number,
     group: String, // for group_knockout format
   }],
+
+  // Team requests (approval flow)
+  teamRequests: [teamRequestSchema],
 
   // Fixtures & brackets
   fixtures: [fixtureSchema],

@@ -11,7 +11,14 @@ router.get('/:id', ctrl.getById);
 router.get('/:id/fixtures', ctrl.getFixtures);
 router.get('/:id/standings', ctrl.getStandings);
 router.post('/', authenticate, requireSubscription('create_tournament'), ctrl.create);
+router.patch('/:id/status', authenticate, ctrl.updateStatus);
 router.post('/:id/register', authenticate, ctrl.registerTeam);
 router.post('/:id/fixtures', authenticate, requireSubscription('create_tournament'), ctrl.generateFixtures);
+
+// Team request flow (new)
+router.post('/:id/team-request', authenticate, ctrl.requestJoinTournament);
+router.post('/:id/team-requests/:requestIndex/approve', authenticate, ctrl.approveTeamRequest);
+router.post('/:id/team-requests/:requestIndex/reject', authenticate, ctrl.rejectTeamRequest);
+router.get('/:id/team-requests', authenticate, ctrl.getTeamRequests);
 
 module.exports = router;

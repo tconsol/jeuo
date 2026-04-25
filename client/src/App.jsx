@@ -25,6 +25,9 @@ import MatchHistory from './pages/match/MatchHistory';
 import MyMatches from './pages/match/MyMatches';
 import Tournaments from './pages/Tournaments';
 import TournamentDetail from './pages/tournament/TournamentDetail';
+import CreateTournament from './pages/tournament/CreateTournament';
+import JoinTournament from './pages/tournament/JoinTournament';
+import TournamentRequests from './pages/tournament/TournamentRequests';
 import Teams from './pages/team/Teams';
 import TeamDetail from './pages/team/TeamDetail';
 import Plans from './pages/subscription/Plans';
@@ -80,7 +83,16 @@ export default function App() {
         <Route path="/matches/:id" element={<MatchDetail />} />
         <Route path="/scoring/:matchId" element={<LiveScoring />} />
         <Route path="/tournaments" element={<Tournaments />} />
+        <Route path="/tournaments/create" element={
+          <ProtectedRoute><CreateTournament /></ProtectedRoute>
+        } />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
+        <Route path="/tournaments/:tournamentId/join" element={
+          <ProtectedRoute><JoinTournament /></ProtectedRoute>
+        } />
+        <Route path="/tournaments/:tournamentId/requests" element={
+          <ProtectedRoute><TournamentRequests /></ProtectedRoute>
+        } />
         <Route path="/teams" element={
           <ProtectedRoute><Teams /></ProtectedRoute>
         } />
